@@ -18,7 +18,7 @@ const (
 	labelTextTerms          = "Search terms:"
 
 	buttonTextAddType = "Add type"
-	buttonTextSearch = "SEARCH"
+	buttonTextSearch  = "SEARCH"
 	buttonTextAddTerm = "Add another\nsearch term"
 )
 
@@ -40,12 +40,12 @@ var (
 )
 
 // Publically facing functionality of the search configuration pane
-type SearchConfigurationPane interface {
-	PaneGetter
+type searchConfigurationPane interface {
+	paneGetter
 }
 
 // Contains all objects related to the search configuration pane
-type searchConfigurationPane struct {
+type scpStruct struct {
 	// Main container
 	mainContainer *fyne.Container
 
@@ -72,7 +72,6 @@ type searchConfigurationPane struct {
 
 	// Reference to parent gui object to pass information to
 	gui guiInternal
-
 }
 
 /*
@@ -83,8 +82,8 @@ Sets up the search configuration pane in the following order:
 	1: Search configuration
 	2: Search terms
 */
-func newSearchConfigurationPane(gui guiInternal) SearchConfigurationPane {
-	scPane := &searchConfigurationPane{}
+func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
+	scPane := &scpStruct{}
 
 	// Setup main pane components
 	scPane.setupConfiguration()
@@ -100,10 +99,10 @@ func newSearchConfigurationPane(gui guiInternal) SearchConfigurationPane {
 		scPane.labelSearchSettings, // Settings label
 		scPane.configuration,       // Search configuration
 		widget.NewSeparator(),
-		scPane.labelSearchTerms,    // Terms label
-		scPane.terms,               // Search terms
-		scPane.termsAdd,            // Add additional search terms
-		scPane.searchButton,        // Button to actually run the search
+		scPane.labelSearchTerms, // Terms label
+		scPane.terms,            // Search terms
+		scPane.termsAdd,         // Add additional search terms
+		scPane.searchButton,     // Button to actually run the search
 	)
 
 	// Save reference to parent
@@ -119,7 +118,7 @@ Sets up horizontal display of:
 	2: Corpus selection
 	3: Togleable settings
 */
-func (scp *searchConfigurationPane) setupConfiguration() {
+func (scp *scpStruct) setupConfiguration() {
 	// Set up corpus selection so we can enable / disable it depending on selected scope
 	scp.confCorpusSelection = widget.NewCheckGroup([]string{}, func(changed []string) {})
 	for _, corpusText := range util.ListCorpusAndTexts() { // TODO: expand to select texts in accordion fashion
@@ -165,7 +164,7 @@ Sets up:
 	1: Horizontal display of search terms
 	2: Button to add additional search terms
 */
-func (scp *searchConfigurationPane) setupSearchTerms() {
+func (scp *scpStruct) setupSearchTerms() {
 	scp.terms = container.NewHBox()
 	scp.terms.Add(scp.createNewSearchTerm())
 	scp.termsAdd = widget.NewButton(buttonTextAddTerm, func() {
@@ -176,7 +175,7 @@ func (scp *searchConfigurationPane) setupSearchTerms() {
 /*
 Adds a new search term to the list
 */
-func (scp *searchConfigurationPane) createNewSearchTerm() *fyne.Container {
+func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
 	/*
 		Search term consists of a vertical box with the following elements:
 			1: Vertical boxes (min 1)
@@ -194,7 +193,7 @@ func (scp *searchConfigurationPane) createNewSearchTerm() *fyne.Container {
 	createType := func() fyne.CanvasObject {
 		// Selection for type as well as removal of type
 		newType := container.NewHBox()
-		newType.Add(widget.NewSelect(util.ValidTypes, func(s string){}))
+		newType.Add(widget.NewSelect(util.ValidTypes, func(s string) {}))
 		// Button to remove this type from the individual search term
 		removeType := widget.NewButton("-", func() {
 			// Check if this is the last type in this search term
@@ -236,7 +235,7 @@ func (scp *searchConfigurationPane) createNewSearchTerm() *fyne.Container {
 /*
 Create search button and all functionality therein
 */
-func (scp *searchConfigurationPane) setupSearchButton() {
+func (scp *scpStruct) setupSearchButton() {
 	scp.searchButton = widget.NewButton(buttonTextSearch, func() {
 		// TODO TODO TODO: the ui doesn't change until the search if fully complete
 		//					so disable the button and set up a go routine to run the function
@@ -254,27 +253,27 @@ func (scp *searchConfigurationPane) setupSearchButton() {
 			for _, sto := range st.(*fyne.Container).Objects { // Types and buttons, and button
 				// Check for *fyne.Container as this holds our actual types
 				switch t := sto.(type) {
-					case *fyne.Container:
-						for _, to := range t.Objects { // Types and buttons
-							for _, too := range to.(*fyne.Container).Objects {
-								switch toot := too.(type) {
-									case *widget.Select: // The actual search type we're looking for
-										// Ignore selections that haven't been selected
-										if selected := toot.Selected; selected != "" {
-											// Add the type to our current term
-											collectedSearchTerms[sti] = append(collectedSearchTerms[sti], selected)
-										}
-									case *widget.Button: // "Remove type" button, ignore
-									default: // Unknown type, should never happen
-										// TODO: handle better?
-										panic(fmt.Sprintf("term contains non-expected type: %v", toot))
+				case *fyne.Container:
+					for _, to := range t.Objects { // Types and buttons
+						for _, too := range to.(*fyne.Container).Objects {
+							switch toot := too.(type) {
+							case *widget.Select: // The actual search type we're looking for
+								// Ignore selections that haven't been selected
+								if selected := toot.Selected; selected != "" {
+									// Add the type to our current term
+									collectedSearchTerms[sti] = append(collectedSearchTerms[sti], selected)
 								}
+							case *widget.Button: // "Remove type" button, ignore
+							default: // Unknown type, should never happen
+								// TODO: handle better?
+								panic(fmt.Sprintf("term contains non-expected type: %v", toot))
 							}
 						}
-					case *widget.Button: // "Add type" button, ignore
-					default: // Unknown type, should never happen
-						// TODO: handle better?
-						panic(fmt.Sprintf("terms contain non-expected type: %v", sto))
+					}
+				case *widget.Button: // "Add type" button, ignore
+				default: // Unknown type, should never happen
+					// TODO: handle better?
+					panic(fmt.Sprintf("terms contain non-expected type: %v", sto))
 				}
 			}
 		}
@@ -283,16 +282,16 @@ func (scp *searchConfigurationPane) setupSearchButton() {
 		duration := time.Since(timeStart)
 
 		scp.gui.updateResults(fmt.Sprintf("passthrough testing: %s", duration))
-		
+
 	})
 }
 
-func (scp *searchConfigurationPane) getSearchSettings() (*util.SearchSettings, error) {
+func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 	return nil, nil
 }
 
 // Interface implementations
 
-func (scp *searchConfigurationPane) GetPane() fyne.CanvasObject {
+func (scp *scpStruct) GetPane() fyne.CanvasObject {
 	return scp.mainContainer // TODO: consider making the entire things scrollable to allow resizing panes without squashing their contents
 }

@@ -6,6 +6,6 @@ import (
 
 // Simple interface for individual elements of the gui
 
-type PaneGetter interface {
+type paneGetter interface {
 	GetPane() fyne.CanvasObject
 }

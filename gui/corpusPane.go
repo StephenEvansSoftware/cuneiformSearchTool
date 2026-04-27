@@ -1,9 +1,9 @@
 package gui
 
 import (
-    "fyne.io/fyne/v2"
-    "fyne.io/fyne/v2/container"
-    "fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 
 	"cuneiformSearchTool/util"
 )
@@ -12,23 +12,22 @@ const (
 	labelTextCorpus = "Corpus Texts:"
 )
 
-type CorpusPane interface {
-	PaneGetter
+type corpusPane interface {
+	paneGetter
 }
 
-type corpusPane struct {
+type cpStruct struct {
 	mainContainer fyne.CanvasObject
 
-	corpus *fyne.Container
-	corpusLabel *widget.Label
+	corpus          *fyne.Container
+	corpusLabel     *widget.Label
 	corpusAccordion *widget.Accordion
 
-	textDisplay TextDisplayPane
-	
+	textDisplay textDisplayPane
 }
 
-func newCorpusPane() CorpusPane {
-	cpp := &corpusPane{}
+func newCorpusPane() corpusPane {
+	cpp := &cpStruct{}
 
 	cpp.setupCorpus()
 	cpp.setupTextDisplay()
@@ -41,7 +40,7 @@ func newCorpusPane() CorpusPane {
 	return cpp
 }
 
-func (cpp *corpusPane) setupCorpus() {
+func (cpp *cpStruct) setupCorpus() {
 	cpp.corpusLabel = widget.NewLabel(labelTextCorpus)
 
 	cpp.corpusAccordion = widget.NewAccordion()
@@ -52,7 +51,7 @@ func (cpp *corpusPane) setupCorpus() {
 		// Create a list of texts within the corpus
 		corpusTextLen := len(corpusText.Texts)
 		corpusTextList := widget.NewList(
-			func() int { return corpusTextLen }, // Length function for the list
+			func() int { return corpusTextLen },                        // Length function for the list
 			func() fyne.CanvasObject { return widget.NewLabel("tmp") }, // Initial list items
 			func(liID widget.ListItemID, co fyne.CanvasObject) {
 				co.(*widget.Label).SetText(corpusText.Texts[liID].TextName)
@@ -74,7 +73,7 @@ func (cpp *corpusPane) setupCorpus() {
 		// TODO: better way to do this?
 		corpusTextListSize := fyne.NewSize(
 			SIZE_LIST_WIDTH, // TODO: different width?
-			SIZE_LIST_HEIGHT * float32(corpusTextLen), // TODO: have a max?
+			SIZE_LIST_HEIGHT*float32(corpusTextLen), // TODO: have a max?
 		)
 		corpusTextListContainer := container.NewGridWrap(
 			corpusTextListSize,
@@ -101,10 +100,10 @@ func (cpp *corpusPane) setupCorpus() {
 	)
 }
 
-func (cpp *corpusPane) setupTextDisplay() {
+func (cpp *cpStruct) setupTextDisplay() {
 	cpp.textDisplay = newTextDisplay()
 }
 
-func (cpp *corpusPane) GetPane() fyne.CanvasObject {
+func (cpp *cpStruct) GetPane() fyne.CanvasObject {
 	return cpp.mainContainer
 }

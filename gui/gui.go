@@ -85,9 +85,9 @@ type gui struct {
 	// TODO TODO TODO: end of legacy, remove when new working
 
 	// Default view panes
-	searchConfigurationPane SearchConfigurationPane
-	searchResultsPane       SearchResultsPane
-	corpusPane              CorpusPane
+	searchConfigurationPane searchConfigurationPane
+	searchResultsPane       searchResultsPane
+	corpusPane              corpusPane
 }
 
 // Package initialisation just covers the version for now
@@ -513,28 +513,6 @@ func (g *gui) RunSearch(terms [][]string, timeStart time.Time) {
 			g.LeftPaneBottomRight.ParseMarkdown(printableText)
 		}
 	}
-}
-
-func TestNewPane() {
-
-	testApp := app.NewWithID("test-app")
-	testWindow := testApp.NewWindow("test-app-window")
-	testWindow.Resize(fyne.NewSize(float32(800), float32(600)))
-
-	// Search pane
-	//	nsp := newSearchConfigurationPane()
-	//	testWindow.SetContent(nsp.GetPane())
-
-	// Result pane
-	//	nrp := newSearchResultsPane()
-	//	testWindow.SetContent(nrp.GetPane())
-
-	// Corpus pane
-	ncp := newCorpusPane()
-	testWindow.SetContent(ncp.GetPane())
-
-	testWindow.SetMaster()
-	testWindow.ShowAndRun()
 }
 
 func (g *gui) updateResults(s string) {
