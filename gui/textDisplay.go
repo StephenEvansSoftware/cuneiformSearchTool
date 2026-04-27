@@ -37,7 +37,6 @@ func newTextDisplay() textDisplayPane {
 	tdp.labelText = widget.NewLabel(labelTextDisplayDefault)
 	tdp.richTextBox = widget.NewRichTextFromMarkdown(richTextDisplayDefault)
 
-
 	tdp.mainContainer = container.NewBorder(
 		container.NewVBox(
 			tdp.labelText,

@@ -74,14 +74,6 @@ type scpStruct struct {
 	gui guiInternal
 }
 
-/*
-Creates the overarching pane for entire search settings
-
-Sets up the search configuration pane in the following order:
-
-	1: Search configuration
-	2: Search terms
-*/
 func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 	scPane := &scpStruct{}
 
@@ -105,19 +97,12 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 		scPane.searchButton,     // Button to actually run the search
 	)
 
-	// Save reference to parent
+	// Save reference to parent to start search
 	scPane.gui = gui
 
 	return scPane
 }
 
-/*
-Sets up horizontal display of:
-
-	1: Search scope
-	2: Corpus selection
-	3: Togleable settings
-*/
 func (scp *scpStruct) setupConfiguration() {
 	// Set up corpus selection so we can enable / disable it depending on selected scope
 	scp.confCorpusSelection = widget.NewCheckGroup([]string{}, func(changed []string) {})
@@ -158,12 +143,6 @@ func (scp *scpStruct) setupConfiguration() {
 	)
 }
 
-/*
-Sets up:
-
-	1: Horizontal display of search terms
-	2: Button to add additional search terms
-*/
 func (scp *scpStruct) setupSearchTerms() {
 	scp.terms = container.NewHBox()
 	scp.terms.Add(scp.createNewSearchTerm())
@@ -172,18 +151,7 @@ func (scp *scpStruct) setupSearchTerms() {
 	})
 }
 
-/*
-Adds a new search term to the list
-*/
 func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
-	/*
-		Search term consists of a vertical box with the following elements:
-			1: Vertical boxes (min 1)
-				a: Dropdown of search types
-				b: Button to remove search type
-			2: Button to add another search type
-	*/
-
 	// Overarching search term
 	encapsulatedTerm := container.NewVBox()
 	// Individual types of the search term
@@ -232,9 +200,6 @@ func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
 	return encapsulatedTerm
 }
 
-/*
-Create search button and all functionality therein
-*/
 func (scp *scpStruct) setupSearchButton() {
 	scp.searchButton = widget.NewButton(buttonTextSearch, func() {
 		// TODO TODO TODO: the ui doesn't change until the search if fully complete
@@ -309,7 +274,6 @@ func (scp *scpStruct) setupSearchButton() {
 				continue
 			}
 		}
-
 
 		// Inform gui that a new search is happening and let it handle the rest
 		scp.gui.startNewSearch(collectedSearchTerms, searchSettings, timeStart)

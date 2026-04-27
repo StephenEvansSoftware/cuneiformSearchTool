@@ -85,8 +85,6 @@ type SearchSettings struct {
 	SearchAllTexts bool
 	SelectedCorpus []string
 
-
-
 	SearchWrappedText        bool
 	PrintTextMetaInformation bool
 	UsePOS                   bool
@@ -193,26 +191,6 @@ func ValidateTypes(types [][]string) error {
 // TODO TODO TODO: the gui should send the information back here of which ones to search and their paths and such
 // TODO TODO TODO TODO TODO: just accept search settings instead of all the extra things
 func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*TextSearchResult, int, error) {
-	/*
-		1. Check if source folder contains texts
-		2. Run search
-	*/
-
-	/*
-		dir, _, err := checkExists(inputSources)
-		if err != nil {
-			return nil, -1, err
-		}
-		if !dir {
-			return nil, -1, fmt.Errorf("source directory '%s' not found", inputSources)
-		}
-
-		sourceFiles, err := os.ReadDir(inputSources)
-		if err != nil {
-			return nil, -1, err
-		}
-	*/
-
 	searchResults := []*TextSearchResult{}
 	totalInstancesFound := 0
 	// When allCorpus is set, change which corpus to search by overriding its value
@@ -248,30 +226,6 @@ func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*TextSearchR
 		}
 	}
 	return searchResults, totalInstancesFound, nil
-
-	/*
-		searchResults := []*TextSearchResult{}
-		totalInstancesFound := 0
-		for _, e := range sourceFiles {
-			filePath := fmt.Sprintf("%s/%s", inputSources, e.Name())
-			text, err := readFile(filePath)
-			if err != nil {
-				return nil, -1, err
-			}
-			// TODO TODO TODO: actual call to search is here
-			// replace all of the booleans with values from the search settings
-			searchResult, err := searchText(text, terms, true, false, false)
-			if err != nil {
-				return nil, -1, err
-			}
-			if len(searchResult.Results) != 0 {
-				searchResults = append(searchResults, searchResult)
-				totalInstancesFound += len(searchResult.Results)
-			}
-		}
-
-		return searchResults, totalInstancesFound, nil
-	*/
 }
 
 func checkExists(path string) (isDir, isFile bool, err error) {

@@ -35,7 +35,6 @@ type searchResultsPane interface {
 // Contains all objects related to the search result pane
 type srpStruct struct {
 	// Main container
-	//	mainContainer *fyne.Container
 	mainContainer fyne.CanvasObject
 
 	// Result container
@@ -123,8 +122,8 @@ func (srp *srpStruct) updateResults(overwrite bool, searchResults []*util.TextSe
 
 		// TODO: better way to do this?
 		resultsListSize := fyne.NewSize(
-		SIZE_LIST_WIDTH,
-		SIZE_LIST_HEIGHT*float32(resultsListLen),
+			SIZE_LIST_WIDTH,
+			SIZE_LIST_HEIGHT*float32(resultsListLen),
 		)
 		resultsListContainer := container.NewGridWrap(
 			resultsListSize,
@@ -145,6 +144,5 @@ func (srp *srpStruct) updateResults(overwrite bool, searchResults []*util.TextSe
 			srp.textDisplay.SetTitle(sr.TextName)
 			srp.textDisplay.ParseMarkdown([]string{printableText})
 		}
-		
 	}
 }
