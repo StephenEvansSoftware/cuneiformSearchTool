@@ -34,7 +34,7 @@ func newCorpusPane() corpusPane {
 
 	cpp.mainContainer = container.NewVSplit(
 		cpp.corpus,
-		container.NewScroll(cpp.textDisplay.GetPane()),
+		cpp.textDisplay.GetPane(),
 	)
 
 	return cpp

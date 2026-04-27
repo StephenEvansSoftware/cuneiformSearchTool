@@ -41,6 +41,7 @@ type GUI interface {
 // Keeps inner workings of the gui private but allows passing of information from pane to pane
 type guiInternal interface {
 	updateResults(string) // TODO: just for testing, will change later
+	startNewSearch([][]string, *util.SearchSettings, time.Time)
 }
 
 type gui struct {
@@ -442,8 +443,8 @@ func (g *gui) RunSearch(terms [][]string, timeStart time.Time) {
 	}
 
 	// TODO TODO TODO: apss in all other options selected from search configuration
-	scopeAllTexts := g.searchScope.Selected == "All Texts" // TODO: have the selections be vars we can check instead of checking raw strings every time
 	searchSettings := &util.SearchSettings{}
+	searchSettings.SearchAllTexts = g.searchScope.Selected == "All Texts" // TODO: have the selections be vars we can check instead of checking raw strings every time
 	for _, sss := range g.searchSettings.Selected {
 		// TODO TODO TODO: change to a switch or a map or something
 		if sss == "Search over multiple lines" {
@@ -461,11 +462,17 @@ func (g *gui) RunSearch(terms [][]string, timeStart time.Time) {
 	}
 	searchResults, totalInstances, err := util.SearchFor(
 		terms,
+		searchSettings,
+	)
+	/*
+	searchResults, totalInstances, err := util.SearchFor(
+		terms,
 		scopeAllTexts,
 		g.searchCorpusSelection.Selected,
 		[]string{}, // TODO: not searching individual texts yet
 		searchSettings,
 	)
+	*/
 	if err != nil {
 		g.LeftPaneBottomLeftTop.ParseMarkdown(fmt.Sprintf("SEARCH ERROR: %s", err.Error()))
 		return
@@ -516,5 +523,37 @@ func (g *gui) RunSearch(terms [][]string, timeStart time.Time) {
 }
 
 func (g *gui) updateResults(s string) {
-	g.searchResultsPane.simpleUpdate([]string{s})
+	g.searchResultsPane.simpleUpdate(s)
+}
+
+// Run a new search with the given search terms
+func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettings, startTime time.Time) {
+	if err := util.ValidateTypes(terms); err != nil {
+		g.searchResultsPane.startNewSearch("Search error:", err.Error())
+		return
+	}
+	g.searchResultsPane.startNewSearch(fmt.Sprintf("Searching for: %+v\n", terms)) // TODO: make this nicer
+
+	// Run the search
+	searchResults, totalInstances, err := util.SearchFor(
+		terms,
+		searchSettings,
+	)
+	if err != nil {
+		g.searchResultsPane.startNewSearch("Search error:", err.Error())
+		return
+	}
+	g.searchResultsPane.simpleUpdate(fmt.Sprintf("Duration of search: %s\n", time.Since(startTime)))
+	g.searchResultsPane.simpleUpdate(fmt.Sprintf(
+		"Texts containing search terms: %d\n",
+		len(searchResults),
+	))
+	g.searchResultsPane.simpleUpdate(fmt.Sprintf(
+		"Total instances found across all texts: %d\n",
+		totalInstances,
+	))
+
+	g.searchResultsPane.updateResults(false, searchResults, searchSettings)
+
+	// TODO: also disable all other widgets associated with search configuration while search is running
 }

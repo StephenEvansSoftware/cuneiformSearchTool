@@ -278,11 +278,41 @@ func (scp *scpStruct) setupSearchButton() {
 			}
 		}
 
-		// TODO TODO TODO TODO TODO: testing, remove immediately
-		duration := time.Since(timeStart)
+		// Collect all search configuration and settings
+		searchSettings := &util.SearchSettings{}
+		switch scp.confScope.Selected { // TODO: have this be handled by changing search settings when clicked instead of getting it here
+		case confTextSearchScope[0]: // Search all texts
+			searchSettings.SearchAllTexts = true
+		case confTextSearchScope[1]: // Search selected corpus'
+			searchSettings.SelectedCorpus = scp.confCorpusSelection.Selected
+		case confTextSearchScope[2]: // Search selected texts // TODO
+			searchSettings.SelectedCorpus = scp.confCorpusSelection.Selected
+		default: // Should never happen
+			panic("cannot determine configuration search scope")
+		}
+		// TODO: same as above, have it automatically set the settings whenever clicked
+		for _, ss := range scp.confSettings.Selected {
+			if ss == confTextSearchSettings[0] {
+				searchSettings.SearchWrappedText = true
+				continue
+			}
+			if ss == confTextSearchSettings[1] {
+				searchSettings.PrintTextMetaInformation = true
+				continue
+			}
+			if ss == confTextSearchSettings[2] {
+				searchSettings.UsePOS = true
+				continue
+			}
+			if ss == confTextSearchSettings[3] {
+				searchSettings.UseFORM = true
+				continue
+			}
+		}
 
-		scp.gui.updateResults(fmt.Sprintf("passthrough testing: %s", duration))
 
+		// Inform gui that a new search is happening and let it handle the rest
+		scp.gui.startNewSearch(collectedSearchTerms, searchSettings, timeStart)
 	})
 }
 

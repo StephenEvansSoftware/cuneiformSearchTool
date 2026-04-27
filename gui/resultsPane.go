@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -20,10 +22,14 @@ const (
 type searchResultsPane interface {
 	paneGetter
 
+	// Indicate a new search is happening
+	startNewSearch(markdown string, optional ...string)
+
 	// Displays the text given directly
-	simpleUpdate(markdown []string)
+	simpleUpdate(markdown string, optional ...string)
 	// Displays a full result
-	updateResults(overwrite bool, results []*util.TextSearchResult) // TODO: may change TextSearchResult, update if needed
+	updateResults(overwrite bool, results []*util.TextSearchResult, searchSettings *util.SearchSettings) // TODO: may change TextSearchResult, update if needed
+	// TODO: not happy with the search settings being passed in here, should have something else for it
 }
 
 // Contains all objects related to the search result pane
@@ -52,7 +58,7 @@ func newSearchResultsPane() searchResultsPane {
 	// Create the finalised search result pane
 	srPane.mainContainer = container.NewHSplit(
 		srPane.results,
-		srPane.textDisplay.GetPane(),
+		container.NewScroll(srPane.textDisplay.GetPane()),
 	)
 	return srPane
 }
@@ -71,8 +77,10 @@ func (srp *srpStruct) setupResults() {
 		nil,
 		nil,
 		nil,
-		container.NewScroll(srp.resultsInfo),
-		srp.resultsAccordion,
+		container.NewScroll(container.NewVBox(
+			container.NewVScroll(srp.resultsInfo),
+			srp.resultsAccordion,
+		)),
 	)
 }
 
@@ -84,12 +92,59 @@ func (srp *srpStruct) GetPane() fyne.CanvasObject {
 	return srp.mainContainer
 }
 
-func (srp *srpStruct) simpleUpdate(markdown []string) {
-	for _, line := range markdown {
+func (srp *srpStruct) startNewSearch(markdown string, optional ...string) {
+	// Clear current text display by parsing the markdown given
+	srp.resultsInfo.ParseMarkdown(markdown)
+	for _, line := range optional { // TODO: this is the same as below, make it a function or such
 		srp.resultsInfo.AppendMarkdown(line)
 	}
 }
 
-func (srp *srpStruct) updateResults(overwrite bool, results []*util.TextSearchResult) {
-	// TODO
+func (srp *srpStruct) simpleUpdate(markdown string, optional ...string) {
+	srp.resultsInfo.AppendMarkdown(markdown)
+	for _, line := range optional {
+		srp.resultsInfo.AppendMarkdown(line)
+	}
+}
+
+func (srp *srpStruct) updateResults(overwrite bool, searchResults []*util.TextSearchResult, searchSettings *util.SearchSettings) {
+	// Clear previous results
+	srp.resultsAccordion.Items = []*widget.AccordionItem{}
+	for _, sr := range searchResults {
+		resultsListLen := len(sr.Results)
+		resultsList := widget.NewList(
+			func() int { return resultsListLen },
+			func() fyne.CanvasObject { return widget.NewLabel("tmp") },
+			func(liID widget.ListItemID, co fyne.CanvasObject) {
+				// TODO: this result display is messy, fix
+				co.(*widget.Label).SetText(fmt.Sprintf("Lines: %d, Position: %d, Last Entry: %s", sr.Results[liID].OverallLineIndex, sr.Results[liID].Position, sr.Results[liID].LastEntry))
+			},
+		)
+
+		// TODO: better way to do this?
+		resultsListSize := fyne.NewSize(
+		SIZE_LIST_WIDTH,
+		SIZE_LIST_HEIGHT*float32(resultsListLen),
+		)
+		resultsListContainer := container.NewGridWrap(
+			resultsListSize,
+			resultsList,
+		)
+
+		resultAccItem := widget.NewAccordionItem(
+			fmt.Sprintf("%s: %d results", sr.TextName, resultsListLen), // TODO: different string here?
+			resultsListContainer,
+		)
+		srp.resultsAccordion.Append(resultAccItem)
+
+		resultsList.OnSelected = func(liID widget.ListItemID) {
+			printableText, err := util.GetPrintableText(sr.TextPath, searchSettings.PrintTextMetaInformation, searchSettings.UsePOS, searchSettings.UseFORM)
+			if err != nil {
+				panic(err.Error()) // TODO TODO TODO: handle this better, just panic to know it's occured for now (if it ever does)
+			}
+			srp.textDisplay.SetTitle(sr.TextName)
+			srp.textDisplay.ParseMarkdown([]string{printableText})
+		}
+		
+	}
 }

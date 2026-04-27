@@ -20,6 +20,7 @@ type textDisplayPane interface {
 	SetTitle(string)
 	ParseMarkdown([]string)
 	AppendMarkdown([]string)
+	// TODO: full method to set title and set markdown
 }
 
 type tdpStruct struct {
@@ -36,10 +37,16 @@ func newTextDisplay() textDisplayPane {
 	tdp.labelText = widget.NewLabel(labelTextDisplayDefault)
 	tdp.richTextBox = widget.NewRichTextFromMarkdown(richTextDisplayDefault)
 
-	tdp.mainContainer = container.NewVBox(
-		tdp.labelText,
-		widget.NewSeparator(),
-		tdp.richTextBox,
+
+	tdp.mainContainer = container.NewBorder(
+		container.NewVBox(
+			tdp.labelText,
+			widget.NewSeparator(),
+		),
+		nil,
+		nil,
+		nil,
+		container.NewScroll(tdp.richTextBox),
 	)
 
 	return tdp
@@ -54,6 +61,7 @@ func (tdp *tdpStruct) SetTitle(title string) {
 }
 
 // Simple passthrough without any formality
+// TODO: change to string and optional additional strings
 func (tdp *tdpStruct) ParseMarkdown(content []string) {
 	if len(content) == 0 {
 		// No text input, just parse empty string

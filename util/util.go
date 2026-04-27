@@ -82,6 +82,11 @@ type TextInfo struct {
 
 // TODO TODO TODO: change this a LOT
 type SearchSettings struct {
+	SearchAllTexts bool
+	SelectedCorpus []string
+
+
+
 	SearchWrappedText        bool
 	PrintTextMetaInformation bool
 	UsePOS                   bool
@@ -186,7 +191,8 @@ func ValidateTypes(types [][]string) error {
 
 // TODO: change inputs and a whole lot here
 // TODO TODO TODO: the gui should send the information back here of which ones to search and their paths and such
-func SearchFor(terms [][]string, allCorpus bool, corpus []string, text []string, settings *SearchSettings) ([]*TextSearchResult, int, error) {
+// TODO TODO TODO TODO TODO: just accept search settings instead of all the extra things
+func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*TextSearchResult, int, error) {
 	/*
 		1. Check if source folder contains texts
 		2. Run search
@@ -210,15 +216,15 @@ func SearchFor(terms [][]string, allCorpus bool, corpus []string, text []string,
 	searchResults := []*TextSearchResult{}
 	totalInstancesFound := 0
 	// When allCorpus is set, change which corpus to search by overriding its value
-	if allCorpus {
-		corpus = []string{}
+	if searchSettings.SearchAllTexts {
+		searchSettings.SelectedCorpus = []string{}
 		for _, corp := range corpusTextInfo {
-			corpus = append(corpus, corp.CorpusName)
+			searchSettings.SelectedCorpus = append(searchSettings.SelectedCorpus, corp.CorpusName)
 		}
 	}
 
 	for _, corpTextInfo := range corpusTextInfo {
-		for _, corp := range corpus {
+		for _, corp := range searchSettings.SelectedCorpus {
 			if corp == corpTextInfo.CorpusName {
 				// Search here
 				for _, textInfo := range corpTextInfo.Texts {
@@ -227,7 +233,7 @@ func SearchFor(terms [][]string, allCorpus bool, corpus []string, text []string,
 					if err != nil {
 						return nil, -1, err
 					}
-					searchResult, err := searchText(textFile, terms, settings)
+					searchResult, err := searchText(textFile, terms, searchSettings)
 
 					if err != nil {
 						return nil, -1, err

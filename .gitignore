@@ -46,4 +46,5 @@ cuneiformSearchTool
 jsonFiles/*
 
 # Miscellaneous files
+*.swp
 todo
