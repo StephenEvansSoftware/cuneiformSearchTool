@@ -39,8 +39,9 @@ build.sh
 run.sh
 windowsCompile.sh
 
-# Compiled binary
-cuneiformSearchTool
+# Compiled binaries
+allBuilds/*
+cuneiformSearchTool*
 
 # Input files
 jsonFiles/*

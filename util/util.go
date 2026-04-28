@@ -50,7 +50,7 @@ var (
 		"u",	//// Breaks? Only on POS
 	}
 
-	properNounTypes = []string{
+	ProperNounTypes = []string{
 		"CN",
 		"DN",
 		"EN",
@@ -365,13 +365,13 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 										if searchSettings.UsePOS {
 											if cdl4.F.Pos == spf {
 												previouslyFoundPatternPart[0] = true
+												break
 											}
-											break
 										} else {
 											if cdl4.F.Epos == spf {
 												previouslyFoundPatternPart[0] = true
+												break
 											}
-											break
 										}
 									}
 									// Final check to see if we have completed the pattern or not
