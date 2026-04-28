@@ -13,41 +13,56 @@ import (
 var (
 	// Valid word types
 	ValidTypes = []string{
-		"AJ", // Adjective
-		"AV",
+		"AJ",	// Adjective
+		"AV",	// Adverb
+		"CN",	// Celestial name
+		"CNJ",	// Conjunction
+		"DET",	// Determinative pronoun
+		"DN",	// Divine name
+		"DP",	// Demonstrative pronoun
+		"EN",	// Ethnic name
+		"GN",	// Geographic name
+		"IP",	// Independant pronoun
+		"J",	// Exclamation / interjection
+		"MN",	// Month name
+		"MOD",	// Modifier
+		"N",	// Noun
+		"NU",	// Numeral
+		"ON",	// Settlement name
+		"PN",	// Personal name
+		"PP",	// Possesive pronoun
+		"PRP",	// Preposition
+		"QN",	// Place name
+		"QP",	// Question particle
+		"REL",	// Relative pronoun
+		"RN",	// Ruler name
+		"RP",	// Reflexive prnoun
+		"SBJ",	// Subjunction
+		"SN",	// City / settlement name
+		"TN",	// Temple name
+		"V",	// Verb
+		"V/i",	//// Some sumerian stuff
+		"V/t",	//// Some sumerian stuff
+		"WN",	// Water name
+		"X",	// Meaning unknown
+		"XP",	// Indefinite pronoun
+		"n",	//// Breaks? Only on POS
+		"u",	//// Breaks? Only on POS
+	}
+
+	properNounTypes = []string{
 		"CN",
-		"CNJ",
-		"DET",
 		"DN",
-		"DP",
 		"EN",
 		"GN",
-		"IP",
-		"J",
 		"MN",
-		"MOD",
-		"N", // Noun
-		"NU",
 		"ON",
 		"PN",
-		"PP",
-		"PRP",
 		"QN",
-		"QP",
-		"REL",
 		"RN",
-		"RP",
-		"SBJ",
 		"SN",
 		"TN",
-		"V", // Verb
-		"V/i",
-		"V/t",
 		"WN",
-		"X",
-		"XP",
-		"n",
-		"u",
 	}
 
 	inputSources = "./jsonFiles/sources"

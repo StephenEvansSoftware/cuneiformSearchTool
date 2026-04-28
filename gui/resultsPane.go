@@ -77,7 +77,7 @@ func (srp *srpStruct) setupResults() {
 		nil,
 		nil,
 		container.NewScroll(container.NewVBox(
-			container.NewVScroll(srp.resultsInfo),
+			srp.resultsInfo,
 			srp.resultsAccordion,
 		)),
 	)

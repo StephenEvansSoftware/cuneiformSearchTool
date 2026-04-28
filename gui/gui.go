@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	// Version is injected at compile time
 	VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH string
 	VERSION                                     string
 )
@@ -39,6 +40,9 @@ type gui struct {
 	application fyne.App
 	mainWindow  fyne.Window
 
+	// Main menu
+	mainMenu mainMenu
+
 	// Default view panes
 	searchConfigurationPane searchConfigurationPane
 	searchResultsPane       searchResultsPane
@@ -56,10 +60,17 @@ func NewGUI() GUI {
 	}
 	g.mainWindow = g.application.NewWindow(fmt.Sprintf("%s - v%s", MAIN_WINDOW_TITLE, VERSION))
 
+	g.createMainMenu()
+
 	// Always start with default view loaded
 	g.createDefaultView()
 
 	return g
+}
+
+func (g *gui) createMainMenu() {
+	g.mainMenu = newMainMenu(g)
+	g.mainWindow.SetMainMenu(g.mainMenu.getMainMenu())
 }
 
 func (g *gui) createDefaultView() {

@@ -14,7 +14,7 @@ import (
 // This file creates the search configuration pane of the gui
 
 const (
-	labelTextSearchSettings = "Search settings:"
+	labelTextSearchSettings = "Search:"
 	labelTextTerms          = "Search terms:"
 
 	buttonTextAddType = "Add type"
