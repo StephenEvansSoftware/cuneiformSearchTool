@@ -13,44 +13,46 @@ import (
 var (
 	// Valid word types
 	ValidTypes = []string{
-		"AJ",	// Adjective
-		"AV",	// Adverb
-		"CN",	// Celestial name
-		"CNJ",	// Conjunction
-		"DET",	// Determinative pronoun
-		"DN",	// Divine name
-		"DP",	// Demonstrative pronoun
-		"EN",	// Ethnic name
-		"GN",	// Geographic name
-		"IP",	// Independant pronoun
-		"J",	// Exclamation / interjection
-		"MN",	// Month name
-		"MOD",	// Modifier
-		"N",	// Noun
-		"NU",	// Numeral
-		"ON",	// Settlement name
-		"PN",	// Personal name
-		"PP",	// Possesive pronoun
-		"PRP",	// Preposition
-		"QN",	// Place name
-		"QP",	// Question particle
-		"REL",	// Relative pronoun
-		"RN",	// Ruler name
-		"RP",	// Reflexive prnoun
-		"SBJ",	// Subjunction
-		"SN",	// City / settlement name
-		"TN",	// Temple name
-		"V",	// Verb
-		"V/i",	//// Some sumerian stuff
-		"V/t",	//// Some sumerian stuff
-		"WN",	// Water name
-		"X",	// Meaning unknown
-		"XP",	// Indefinite pronoun
-		"n",	//// Breaks? Only on POS
-		"u",	//// Breaks? Only on POS
+		"AJ",  // Adjective
+		"AV",  // Adverb
+		"CN",  // Celestial name
+		"CNJ", // Conjunction
+		"DET", // Determinative pronoun
+		"DN",  // Divine name
+		"DP",  // Demonstrative pronoun
+		"EN",  // Ethnic name
+		"GN",  // Geographic name
+		"IP",  // Independant pronoun
+		"J",   // Exclamation / interjection
+		"MN",  // Month name
+		"MOD", // Modifier
+		"N",   // Noun
+		"NU",  // Numeral
+		"ON",  // Settlement name
+		"PN",  // Personal name
+		"PP",  // Possesive pronoun
+		"PRP", // Preposition
+		"QN",  // Place name
+		"QP",  // Question particle
+		"REL", // Relative pronoun
+		"RN",  // Ruler name
+		"RP",  // Reflexive prnoun
+		"SBJ", // Subjunction
+		"SN",  // City / settlement name
+		"TN",  // Temple name
+		"V",   // Verb
+		"V/i", //// Some sumerian stuff
+		"V/t", //// Some sumerian stuff
+		"WN",  // Water name
+		"X",   // Meaning unknown
+		"XP",  // Indefinite pronoun
+		"n",   //// Breaks? Only on POS
+		"u",   //// Breaks? Only on POS
 	}
 
-	ProperNounTypes = []string{
+	AllProperNounsType = "All proper nouns"
+
+	properNounTypes = []string{
 		"CN",
 		"DN",
 		"EN",
@@ -71,9 +73,14 @@ var (
 	corpusTextInfo = []*CorpusInfo{}
 )
 
+type CorpusSearchResult struct {
+	CorpusName  string
+	TextResults []*TextSearchResult
+}
+
 type TextSearchResult struct {
 	TextName string
-	Results  []SearchResult
+	Results  []*SearchResult
 	TextPath string // Used to pass back to load if selected
 }
 
@@ -184,6 +191,10 @@ func ValidateTypes(types [][]string) error {
 			invalidTypes = append(invalidTypes, "empty term invalid")
 		}
 		for _, search := range searchArr {
+			// Special case where the proper nouns group is the term
+			if search == AllProperNounsType {
+				break
+			}
 			typeFound := false
 			for _, t := range ValidTypes {
 				if search == t {
@@ -205,8 +216,7 @@ func ValidateTypes(types [][]string) error {
 // TODO: change inputs and a whole lot here
 // TODO TODO TODO: the gui should send the information back here of which ones to search and their paths and such
 // TODO TODO TODO TODO TODO: just accept search settings instead of all the extra things
-func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*TextSearchResult, int, error) {
-	searchResults := []*TextSearchResult{}
+func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearchResult, int, error) {
 	totalInstancesFound := 0
 	// When allCorpus is set, change which corpus to search by overriding its value
 	if searchSettings.SearchAllTexts {
@@ -216,10 +226,18 @@ func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*TextSearchR
 		}
 	}
 
+	if len(searchSettings.SelectedCorpus) == 0 {
+		// No corpus' selected, return error
+		return nil, -1, fmt.Errorf("no corpus selected")
+	}
+
+	corpusSearchResults := []*CorpusSearchResult{}
+
 	for _, corpTextInfo := range corpusTextInfo {
 		for _, corp := range searchSettings.SelectedCorpus {
 			if corp == corpTextInfo.CorpusName {
 				// Search here
+				textSearchResults := []*TextSearchResult{}
 				for _, textInfo := range corpTextInfo.Texts {
 					// TODO TODO TODO: add text deliniation here
 					textFile, err := readFile(textInfo.TextPath)
@@ -233,14 +251,20 @@ func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*TextSearchR
 					}
 					if len(searchResult.Results) != 0 {
 						searchResult.TextPath = textInfo.TextPath
-						searchResults = append(searchResults, searchResult)
+						textSearchResults = append(textSearchResults, searchResult)
 						totalInstancesFound += len(searchResult.Results)
 					}
+				}
+				if len(textSearchResults) != 0 {
+					corpusSearchResults = append(corpusSearchResults, &CorpusSearchResult{
+						CorpusName:  corp,
+						TextResults: textSearchResults,
+					})
 				}
 			}
 		}
 	}
-	return searchResults, totalInstancesFound, nil
+	return corpusSearchResults, totalInstancesFound, nil
 }
 
 func checkExists(path string) (isDir, isFile bool, err error) {
@@ -285,11 +309,22 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 		}
 	}
 
+	for i, sp := range searchPattern {
+		for j, spt := range sp {
+			if spt == AllProperNounsType {
+				// Overwrite the "All proper nouns" text with the first proper noun
+				searchPattern[i][j] = properNounTypes[0]
+				// Append the remaining proper nouns from the list to the search pattern
+				searchPattern[i] = append(searchPattern[i], properNounTypes[1:]...)
+			}
+		}
+	}
+
 	spLen := len(searchPattern)
 	previouslyFoundPatternPart := make([]bool, spLen)
 	foundPatterns := &TextSearchResult{
 		TextName: textBody.TextId,
-		Results:  []SearchResult{},
+		Results:  []*SearchResult{},
 	}
 	fragIndex := 0
 	currLabel := ""
@@ -379,7 +414,7 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 									if previouslyFoundPatternPart[spLen-1] {
 										// WE HAVE FOUND THE PATTERN
 										// Store line and number
-										newResult := SearchResult{
+										newResult := &SearchResult{
 											OverallLineIndex: numLines - 1,
 											Label:            currLabel,
 											Position:         fragIndex,

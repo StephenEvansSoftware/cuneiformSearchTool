@@ -20,8 +20,6 @@ const (
 	buttonTextAddType = "Add type"
 	buttonTextSearch  = "SEARCH"
 	buttonTextAddTerm = "Add another\nsearch term"
-
-	listTextAllProperNouns = "All proper nouns"
 )
 
 var (
@@ -163,7 +161,7 @@ func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
 	createType := func() fyne.CanvasObject {
 		// Selection for type as well as removal of type
 		newType := container.NewHBox()
-		newType.Add(widget.NewSelect(append([]string{listTextAllProperNouns}, util.ValidTypes...), func(s string) {}))
+		newType.Add(widget.NewSelect(append([]string{util.AllProperNounsType}, util.ValidTypes...), func(s string) {}))
 		// Button to remove this type from the individual search term
 		removeType := widget.NewButton("-", func() {
 			// Check if this is the last type in this search term
@@ -228,11 +226,7 @@ func (scp *scpStruct) setupSearchButton() {
 								// Ignore selections that haven't been selected
 								if selected := toot.Selected; selected != "" {
 									// Add the type to our current term
-									if selected == listTextAllProperNouns {
-										collectedSearchTerms[sti] = append(collectedSearchTerms[sti], util.ProperNounTypes...)
-									} else {
-										collectedSearchTerms[sti] = append(collectedSearchTerms[sti], selected)
-									}
+									collectedSearchTerms[sti] = append(collectedSearchTerms[sti], selected)
 								}
 							case *widget.Button: // "Remove type" button, ignore
 							default: // Unknown type, should never happen

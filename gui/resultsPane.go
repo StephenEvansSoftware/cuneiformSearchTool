@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -16,6 +17,9 @@ const (
 	labelTextResults = "Results:"
 
 	richTextResultsInfoDefault = "*Results will be displayed here after initial search.*"
+
+	// Quick workaround for "tabbing" in markdown
+	richTextTab = "&nbsp&nbsp&nbsp&nbsp"
 )
 
 // Publically facing functionality of the search results pane
@@ -23,12 +27,13 @@ type searchResultsPane interface {
 	paneGetter
 
 	// Indicate a new search is happening
-	startNewSearch(markdown string, optional ...string)
+	startNewSearch(terms [][]string)
 
 	// Displays the text given directly
-	simpleUpdate(markdown string, optional ...string)
+	setResultInfo(markdown string, optional ...string)
+
 	// Displays a full result
-	updateResults(overwrite bool, results []*util.TextSearchResult, searchSettings *util.SearchSettings) // TODO: may change TextSearchResult, update if needed
+	updateResults(results []*util.CorpusSearchResult, totalInstances int, searchSettings *util.SearchSettings, startTime time.Time, searchTime time.Duration)
 	// TODO: not happy with the search settings being passed in here, should have something else for it
 }
 
@@ -91,58 +96,107 @@ func (srp *srpStruct) GetPane() fyne.CanvasObject {
 	return srp.mainContainer
 }
 
-func (srp *srpStruct) startNewSearch(markdown string, optional ...string) {
+func (srp *srpStruct) startNewSearch(terms [][]string) {
 	// Clear current text display by parsing the markdown given
+	srp.resultsInfo.ParseMarkdown("Searching for:")
+	for _, term := range terms {
+		srp.resultsInfo.AppendMarkdown(fmt.Sprintf("%s%+v", richTextTab, term))
+	}
+}
+
+// Overwrite anything current in the result info
+func (srp *srpStruct) setResultInfo(markdown string, optional ...string) {
 	srp.resultsInfo.ParseMarkdown(markdown)
-	for _, line := range optional { // TODO: this is the same as below, make it a function or such
-		srp.resultsInfo.AppendMarkdown(line)
-	}
-}
-
-func (srp *srpStruct) simpleUpdate(markdown string, optional ...string) {
-	srp.resultsInfo.AppendMarkdown(markdown)
 	for _, line := range optional {
-		srp.resultsInfo.AppendMarkdown(line)
+		// TODO: always indenting optional strings for now, change if needed
+		srp.resultsInfo.AppendMarkdown(fmt.Sprintf("%s%s", richTextTab, line))
 	}
 }
 
-func (srp *srpStruct) updateResults(overwrite bool, searchResults []*util.TextSearchResult, searchSettings *util.SearchSettings) {
+func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, totalInstances int, searchSettings *util.SearchSettings, startTime time.Time, searchTime time.Duration) {
+
 	// Clear previous results
 	srp.resultsAccordion.Items = []*widget.AccordionItem{}
-	for _, sr := range searchResults {
-		resultsListLen := len(sr.Results)
-		resultsList := widget.NewList(
-			func() int { return resultsListLen },
-			func() fyne.CanvasObject { return widget.NewLabel("tmp") },
-			func(liID widget.ListItemID, co fyne.CanvasObject) {
-				// TODO: this result display is messy, fix
-				co.(*widget.Label).SetText(fmt.Sprintf("Lines: %d, Position: %d, Last Entry: %s", sr.Results[liID].OverallLineIndex, sr.Results[liID].Position, sr.Results[liID].LastEntry))
-			},
-		)
 
-		// TODO: better way to do this?
-		resultsListSize := fyne.NewSize(
-			SIZE_LIST_WIDTH,
-			SIZE_LIST_HEIGHT*float32(resultsListLen),
-		)
-		resultsListContainer := container.NewGridWrap(
-			resultsListSize,
-			resultsList,
-		)
+	// Keep track of total texts containing results to display later
+	totalTextResults := 0
 
-		resultAccItem := widget.NewAccordionItem(
-			fmt.Sprintf("%s: %d results", sr.TextName, resultsListLen), // TODO: different string here?
-			resultsListContainer,
-		)
-		srp.resultsAccordion.Append(resultAccItem)
+	// Range over the corpus results
+	for _, cr := range searchResults {
+		// Each corpus will be its own accordion holding all text results therein
+		corpusAcc := widget.NewAccordion()
+		corpusAcc.MultiOpen = true
+		totalTextResults += len(cr.TextResults)
+		// Range over the search results within the current corpus
+		for _, tr := range cr.TextResults {
+			resultsListLen := len(tr.Results)
+			resultsList := widget.NewList(
+				func() int { return resultsListLen },
+				func() fyne.CanvasObject { return widget.NewLabel("tmp") },
+				func(liID widget.ListItemID, co fyne.CanvasObject) {
+					// TODO: this result display is messy, fix
+					co.(*widget.Label).SetText(fmt.Sprintf(
+						//"Line:%d, Label:%s, Position:%d, Last Entry: %s",
+						"%d : %s : %d : %s",
+						tr.Results[liID].OverallLineIndex,
+						tr.Results[liID].Label,
+						tr.Results[liID].Position,
+						tr.Results[liID].LastEntry,
+					))
+				},
+			)
 
-		resultsList.OnSelected = func(liID widget.ListItemID) {
-			printableText, err := util.GetPrintableText(sr.TextPath, searchSettings.PrintTextMetaInformation, searchSettings.UsePOS, searchSettings.UseFORM)
-			if err != nil {
-				panic(err.Error()) // TODO TODO TODO: handle this better, just panic to know it's occured for now (if it ever does)
+			// TODO: better way to do this?
+			resultsListSize := fyne.NewSize(
+				SIZE_LIST_WIDTH,
+				SIZE_LIST_HEIGHT*float32(resultsListLen),
+			)
+			resultsListContainer := container.NewGridWrap(
+				resultsListSize,
+				resultsList,
+			)
+
+			resultAccItem := widget.NewAccordionItem(
+				fmt.Sprintf("%s: %d results", tr.TextName, resultsListLen), // TODO: different string here?
+				resultsListContainer,
+			)
+			corpusAcc.Append(resultAccItem)
+
+			resultsList.OnSelected = func(liID widget.ListItemID) {
+				printableText, err := util.GetPrintableText(
+					tr.TextPath,
+					searchSettings.PrintTextMetaInformation,
+					searchSettings.UsePOS,
+					searchSettings.UseFORM,
+				)
+				if err != nil {
+					panic(err.Error()) // TODO TODO TODO: handle this better, just panic to know it's occured for now (if it ever does)
+				}
+				srp.textDisplay.SetTitle(tr.TextName)
+				srp.textDisplay.ParseMarkdown([]string{printableText})
 			}
-			srp.textDisplay.SetTitle(sr.TextName)
-			srp.textDisplay.ParseMarkdown([]string{printableText})
 		}
+		corpusAccItem := widget.NewAccordionItem(fmt.Sprintf("%s: %d", cr.CorpusName, len(cr.TextResults)), corpusAcc)
+		srp.resultsAccordion.Append(corpusAccItem)
 	}
+
+	// Update the results information
+	srp.resultsInfo.AppendMarkdown(fmt.Sprintf("Search duration: %s\n", searchTime))
+	srp.resultsInfo.AppendMarkdown(fmt.Sprintf("Result duration: %s\n", time.Since(startTime)))
+	srp.resultsInfo.AppendMarkdown(fmt.Sprintf(
+		"Corpus' containing search terms: %d\n",
+		len(searchResults),
+	))
+	srp.resultsInfo.AppendMarkdown(fmt.Sprintf(
+		"Texts containing search terms: %d\n",
+		totalTextResults,
+	))
+	srp.resultsInfo.AppendMarkdown(fmt.Sprintf(
+		"Total instances found across all texts: %d\n",
+		totalInstances,
+	))
+	srp.resultsInfo.AppendMarkdown("---")
+	srp.resultsInfo.AppendMarkdown("Results are shown as:")
+	srp.resultsInfo.AppendMarkdown(fmt.Sprintf("%s Line : Label : Position : LastEntry", richTextTab))
+
 }

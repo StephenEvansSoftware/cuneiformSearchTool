@@ -102,10 +102,10 @@ func (g *gui) ShowGUI() {
 // Run a new search with the given search terms
 func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettings, startTime time.Time) {
 	if err := util.ValidateTypes(terms); err != nil {
-		g.searchResultsPane.startNewSearch("Search error:", err.Error())
+		g.searchResultsPane.setResultInfo("Search error:", err.Error())
 		return
 	}
-	g.searchResultsPane.startNewSearch(fmt.Sprintf("Searching for: %+v\n", terms)) // TODO: make this nicer
+	g.searchResultsPane.startNewSearch(terms)
 
 	// Run the search
 	searchResults, totalInstances, err := util.SearchFor(
@@ -113,20 +113,13 @@ func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettin
 		searchSettings,
 	)
 	if err != nil {
-		g.searchResultsPane.startNewSearch("Search error:", err.Error())
+		g.searchResultsPane.setResultInfo("Search error:", err.Error())
 		return
 	}
-	g.searchResultsPane.simpleUpdate(fmt.Sprintf("Duration of search: %s\n", time.Since(startTime)))
-	g.searchResultsPane.simpleUpdate(fmt.Sprintf(
-		"Texts containing search terms: %d\n",
-		len(searchResults),
-	))
-	g.searchResultsPane.simpleUpdate(fmt.Sprintf(
-		"Total instances found across all texts: %d\n",
-		totalInstances,
-	))
 
-	g.searchResultsPane.updateResults(false, searchResults, searchSettings)
+	searchTime := time.Since(startTime)
+
+	g.searchResultsPane.updateResults(searchResults, totalInstances, searchSettings, startTime, searchTime)
 
 	// TODO: also disable all other widgets associated with search configuration while search is running
 }
