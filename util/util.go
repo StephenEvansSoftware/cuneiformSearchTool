@@ -267,6 +267,7 @@ func readFile(path string) (*text.Text, error) {
 	if err := json.Unmarshal(fileBytes, &text); err != nil {
 		return nil, err
 	}
+
 	return &text, nil
 }
 
