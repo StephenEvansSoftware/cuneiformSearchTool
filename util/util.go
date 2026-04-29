@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"slices"
 
 	"cuneiformSearchTool/text"
 )
@@ -519,11 +520,15 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string 
 			metaInf.LineLengthAverageWithoutBlanks,
 		)
 		if metaInf.TotalFrags != 0 {
-			metaFragCounts := fmt.Sprintln("\tFragCounts:")
+			metaInfo = fmt.Sprintf("%s%s", metaInfo, "\tFragCounts:\n")
+			fragCountSlice := []string{}
 			for s, i := range metaInf.FragCounts {
-				metaFragCounts = fmt.Sprintf("%s\t\t%s\t%d\n", metaFragCounts, s, i)
+				fragCountSlice = append(fragCountSlice, fmt.Sprintf("\t\t%s\t%d\n", s, i))
 			}
-			metaInfo = fmt.Sprintf("%s%s", metaInfo, metaFragCounts)
+			slices.Sort(fragCountSlice)
+			for _, fcs := range fragCountSlice {
+				metaInfo = fmt.Sprintf("%s%s", metaInfo, fcs)
+			}
 		}
 		textReturn = fmt.Sprintf("%s\n---\n%s", metaInfo, textReturn)
 	}
