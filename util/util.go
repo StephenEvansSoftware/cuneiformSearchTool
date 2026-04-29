@@ -213,11 +213,8 @@ func ValidateTypes(types [][]string) error {
 	return nil
 }
 
-// TODO: change inputs and a whole lot here
-// TODO TODO TODO: the gui should send the information back here of which ones to search and their paths and such
-// TODO TODO TODO TODO TODO: just accept search settings instead of all the extra things
+// Main search functionality
 func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearchResult, int, error) {
-	totalInstancesFound := 0
 	// When allCorpus is set, change which corpus to search by overriding its value
 	if searchSettings.SearchAllTexts {
 		searchSettings.SelectedCorpus = []string{}
@@ -231,24 +228,28 @@ func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearc
 		return nil, -1, fmt.Errorf("no corpus selected")
 	}
 
+	// Results and total count of terms within corpus
 	corpusSearchResults := []*CorpusSearchResult{}
+	totalInstancesFound := 0
 
 	for _, corpTextInfo := range corpusTextInfo {
 		for _, corp := range searchSettings.SelectedCorpus {
 			if corp == corpTextInfo.CorpusName {
-				// Search here
+				// Search this corpus
 				textSearchResults := []*TextSearchResult{}
+				// Range over each text within the corpus
 				for _, textInfo := range corpTextInfo.Texts {
 					// TODO TODO TODO: add text deliniation here
 					textFile, err := readFile(textInfo.TextPath)
 					if err != nil {
 						return nil, -1, err
 					}
+					// Perform the actual search
 					searchResult, err := searchText(textFile, terms, searchSettings)
-
 					if err != nil {
 						return nil, -1, err
 					}
+					// Avoid adding empty result to search results
 					if len(searchResult.Results) != 0 {
 						searchResult.TextPath = textInfo.TextPath
 						textSearchResults = append(textSearchResults, searchResult)
@@ -297,16 +298,9 @@ func readFile(path string) (*text.Text, error) {
 
 // TODO: a lot. this was just taken pretty much verbatim from my initial prototype god-file monstrosity
 func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *SearchSettings) (*TextSearchResult, error) {
+	// Ensure we're actually searching for something
 	if len(searchPattern) == 0 {
 		return nil, fmt.Errorf("cannot have empty search paattern")
-	}
-
-	// Simple print function to avoid a bunch of if statements in the code
-	printFunc := func(s string, args ...interface{}) {} // Instantiate as doing nothing
-	if searchSettings.printWhileSearching {
-		printFunc = func(s string, args ...interface{}) {
-			fmt.Printf(s, args...)
-		}
 	}
 
 	for i, sp := range searchPattern {
@@ -328,12 +322,7 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 	}
 	fragIndex := 0
 	currLabel := ""
-	// TODO: move this somewhere else
-	metaInf := &text.TextMetaInfo{
-		FragCounts: map[string]int{},
-	}
 
-	printFunc("Start of text: %+v", textBody.TextId)
 	numLines := 1
 
 	for _, cdlOne := range textBody.Cdl {
@@ -346,8 +335,6 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 							var cdlChecker func(cdl4 *text.CdlLevelFour)
 							cdlChecker = func(cdl4 *text.CdlLevelFour) {
 								if cdl4.Type == "line-start" {
-									//printFunc("\n\tLine %d\n\t\t", numLines)
-									printFunc("\n\t%d: %s\n\t\t", numLines, cdl4.Label)
 									currLabel = cdl4.Label
 									numLines += 1
 									fragIndex = 0
@@ -360,14 +347,6 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 								if cdl4.F != nil {
 									fragIndex += 1
 									// This is the actual element in the text we care about
-									printFunc("%s ", cdl4.Frag)
-									metaInf.TotalFrags += 1
-									//metaInf.FragCounts[cdl4.F.Epos] = metaInf.FragCounts[cdl4.F.Epos] + 1
-									if searchSettings.UsePOS {
-										metaInf.FragCounts[cdl4.F.Pos] += 1
-									} else {
-										metaInf.FragCounts[cdl4.F.Epos] += 1
-									}
 									// Reverse iterate through from element N-1 to 0
 									for pfppi := spLen - 2; pfppi >= 0; pfppi -= 1 {
 										// Checking position n
@@ -438,35 +417,6 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 						}
 					}
 				}
-			}
-		}
-	}
-	printFunc("\nEnd of text")
-
-	metaInf.TotalLines = numLines
-	metaInf.LineLengthAverage = float32(metaInf.TotalFrags) / float32(numLines)
-	metaInf.TotalFragsWithoutBlanks = metaInf.TotalFrags - metaInf.FragCounts[""]
-	metaInf.LineLengthAverageWithoutBlanks = float32(metaInf.TotalFragsWithoutBlanks) / float32(numLines)
-
-	// TODO: during the search, we don't want to print anything. change / remove these
-	//	if printTextMetaInfo {
-	if false {
-		fmt.Printf("Meta information on the text:\n"+
-			"\tTotalFrags: %d\n"+
-			"\tWithout Xs: %d\n"+
-			"\tTotalLines: %d\n"+
-			"\tLineLengthAverage: %.2f\n"+
-			"\tAverageWithout Xs: %.2f\n",
-			metaInf.TotalFrags,
-			metaInf.TotalFragsWithoutBlanks,
-			metaInf.TotalLines,
-			metaInf.LineLengthAverage,
-			metaInf.LineLengthAverageWithoutBlanks,
-		)
-		if metaInf.TotalFrags != 0 {
-			fmt.Println("\tFragCounts:")
-			for s, i := range metaInf.FragCounts {
-				fmt.Printf("\t\t%s\t%d\n", s, i)
 			}
 		}
 	}

@@ -24,6 +24,9 @@ const (
 	// TODO: hack to force list being fully visible in accordion item inside vbox
 	SIZE_LIST_WIDTH  float32 = 300
 	SIZE_LIST_HEIGHT float32 = 39.0665647
+
+	// Quick workaround for "tabbing" in markdown
+	richTextTab = "&nbsp&nbsp&nbsp&nbsp"
 )
 
 type GUI interface {

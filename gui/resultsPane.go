@@ -17,9 +17,6 @@ const (
 	labelTextResults = "Results:"
 
 	richTextResultsInfoDefault = "*Results will be displayed here after initial search.*"
-
-	// Quick workaround for "tabbing" in markdown
-	richTextTab = "&nbsp&nbsp&nbsp&nbsp"
 )
 
 // Publically facing functionality of the search results pane
@@ -102,6 +99,9 @@ func (srp *srpStruct) startNewSearch(terms [][]string) {
 	for _, term := range terms {
 		srp.resultsInfo.AppendMarkdown(fmt.Sprintf("%s%+v", richTextTab, term))
 	}
+	// Clear accordion of previous results
+	srp.resultsAccordion.Items = []*widget.AccordionItem{}
+	srp.results.Refresh()
 }
 
 // Overwrite anything current in the result info
@@ -111,10 +111,10 @@ func (srp *srpStruct) setResultInfo(markdown string, optional ...string) {
 		// TODO: always indenting optional strings for now, change if needed
 		srp.resultsInfo.AppendMarkdown(fmt.Sprintf("%s%s", richTextTab, line))
 	}
+	srp.results.Refresh()
 }
 
 func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, totalInstances int, searchSettings *util.SearchSettings, startTime time.Time, searchTime time.Duration) {
-
 	// Clear previous results
 	srp.resultsAccordion.Items = []*widget.AccordionItem{}
 
@@ -199,4 +199,5 @@ func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, to
 	srp.resultsInfo.AppendMarkdown("Results are shown as:")
 	srp.resultsInfo.AppendMarkdown(fmt.Sprintf("%s Line : Label : Position : LastEntry", richTextTab))
 
+	srp.results.Refresh()
 }
