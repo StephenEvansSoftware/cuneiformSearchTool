@@ -111,9 +111,12 @@ type SearchSettings struct {
 	PrintTextMetaInformation bool
 	UsePOS                   bool
 	UseFORM                  bool
+}
 
-	// TODO: legacy, not used
-	printWhileSearching bool
+type PrintSettings struct {
+	PrintTextMetaInformation bool
+	UsePOS                   bool
+	UseFORM                  bool
 }
 
 // Package intiialisation
@@ -303,6 +306,7 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 		return nil, fmt.Errorf("cannot have empty search paattern")
 	}
 
+	// Check if "All proper nouns" are being searched for
 	for i, sp := range searchPattern {
 		for j, spt := range sp {
 			if spt == AllProperNounsType {
@@ -315,16 +319,24 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 	}
 
 	spLen := len(searchPattern)
+	// Slice of bools that denote if we have found up to the nth position of the terms so far
 	previouslyFoundPatternPart := make([]bool, spLen)
+
+	// Collection of results
 	foundPatterns := &TextSearchResult{
 		TextName: textBody.TextId,
 		Results:  []*SearchResult{},
 	}
+
+	// Index in the current line of the current fragment
 	fragIndex := 0
+	// Line count
+	numLines := 1
+	// Line label
 	currLabel := ""
 
-	numLines := 1
-
+	// TODO TODO TODO: messy and gross looping through so many structs even if they are the original structure of the data
+	// TODO TODO TODO: change the structure to something easier to manage
 	for _, cdlOne := range textBody.Cdl {
 		for _, cdlTwo := range cdlOne.Cdl {
 			if cdlTwo.Subtype == "body" {
@@ -332,8 +344,10 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 				for _, cdlThree := range cdlTwo.Cdl {
 					if len(cdlThree.Cdl) != 0 {
 						for _, cdlFour := range cdlThree.Cdl {
+							// Since there can a cdlFour inside of a cdlFour, recursively check it
 							var cdlChecker func(cdl4 *text.CdlLevelFour)
 							cdlChecker = func(cdl4 *text.CdlLevelFour) {
+								// Start of the actual text analysis
 								if cdl4.Type == "line-start" {
 									currLabel = cdl4.Label
 									numLines += 1
@@ -345,9 +359,10 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 									}
 								}
 								if cdl4.F != nil {
-									fragIndex += 1
 									// This is the actual element in the text we care about
+									fragIndex += 1
 									// Reverse iterate through from element N-1 to 0
+									// pfppi = previousFoundPatternPartIndex
 									for pfppi := spLen - 2; pfppi >= 0; pfppi -= 1 {
 										// Checking position n
 										// If position n set, we have found pattern up to n
@@ -404,10 +419,12 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 											newResult.LastEntry = cdl4.Frag
 										}
 										foundPatterns.Results = append(foundPatterns.Results, newResult)
+										// Reset last index in case the pattern was found
 										previouslyFoundPatternPart[spLen-1] = false
 									}
 								}
 								if cdl4.Cdl != nil {
+									// Recursively check cdl within current cdl
 									for _, cdlFive := range cdl4.Cdl {
 										cdlChecker(cdlFive)
 									}
@@ -424,15 +441,15 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 	return foundPatterns, nil
 }
 
-func GetPrintableText(textPath string, metaInf bool, usePOS bool, useFORM bool) (string, error) {
+func GetPrintableText(textPath string, printSettings *PrintSettings) (string, error) {
 	text, err := readFile(textPath)
 	if err != nil {
 		return "", err
 	}
-	return getPrintableText(text, metaInf, usePOS, useFORM), nil
+	return getPrintableText(text, printSettings), nil
 }
 
-func getPrintableText(textBody *text.Text, printMetaInfo bool, usePOS bool, useFORM bool) string {
+func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string {
 	textReturn := fmt.Sprintf("Start of text: %+v\n", textBody.TextId)
 	numLines := 1
 
@@ -455,13 +472,13 @@ func getPrintableText(textBody *text.Text, printMetaInfo bool, usePOS bool, useF
 								}
 								if cdl4.F != nil {
 									// This is the actual element in the text we care about
-									if useFORM {
+									if printSettings.UseFORM {
 										textReturn = fmt.Sprintf("%s%s ", textReturn, cdl4.F.Form)
 									} else {
 										textReturn = fmt.Sprintf("%s%s ", textReturn, cdl4.Frag)
 									}
 									metaInf.TotalFrags += 1
-									if usePOS {
+									if printSettings.UsePOS {
 										metaInf.FragCounts[cdl4.F.Pos] += 1
 									} else {
 										metaInf.FragCounts[cdl4.F.Epos] += 1
@@ -482,13 +499,13 @@ func getPrintableText(textBody *text.Text, printMetaInfo bool, usePOS bool, useF
 	}
 
 	// TODO TODO TODO: the returned text is being used as markdown, so there are issues with escape characters and such
-	if printMetaInfo {
+	if printSettings.PrintTextMetaInformation {
 		metaInf.TotalLines = numLines
 		metaInf.LineLengthAverage = float32(metaInf.TotalFrags) / float32(numLines)
 		metaInf.TotalFragsWithoutBlanks = metaInf.TotalFrags - metaInf.FragCounts[""]
 		metaInf.LineLengthAverageWithoutBlanks = float32(metaInf.TotalFragsWithoutBlanks) / float32(numLines)
 
-		printMetaInfo := fmt.Sprintf("Meta information on text: %s\n\n"+
+		metaInfo := fmt.Sprintf("Meta information on text: %s\n\n"+
 			"\tTotalFrags: %d\n"+
 			"\tWithout Xs: %d\n"+
 			"\tTotalLines: %d\n"+
@@ -506,9 +523,9 @@ func getPrintableText(textBody *text.Text, printMetaInfo bool, usePOS bool, useF
 			for s, i := range metaInf.FragCounts {
 				metaFragCounts = fmt.Sprintf("%s\t\t%s\t%d\n", metaFragCounts, s, i)
 			}
-			printMetaInfo = fmt.Sprintf("%s%s", printMetaInfo, metaFragCounts)
+			metaInfo = fmt.Sprintf("%s%s", metaInfo, metaFragCounts)
 		}
-		textReturn = fmt.Sprintf("%s\n---\n%s", printMetaInfo, textReturn)
+		textReturn = fmt.Sprintf("%s\n---\n%s", metaInfo, textReturn)
 	}
 
 	return fmt.Sprintf("%s\nEnd of text", textReturn)

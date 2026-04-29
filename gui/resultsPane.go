@@ -165,9 +165,11 @@ func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, to
 			resultsList.OnSelected = func(liID widget.ListItemID) {
 				printableText, err := util.GetPrintableText(
 					tr.TextPath,
-					searchSettings.PrintTextMetaInformation,
-					searchSettings.UsePOS,
-					searchSettings.UseFORM,
+					&util.PrintSettings{ // TODO: change once print settings are easier handled
+						PrintTextMetaInformation: searchSettings.PrintTextMetaInformation,
+						UsePOS:                   searchSettings.UsePOS,
+						UseFORM:                  searchSettings.UseFORM,
+					},
 				)
 				if err != nil {
 					panic(err.Error()) // TODO TODO TODO: handle this better, just panic to know it's occured for now (if it ever does)
