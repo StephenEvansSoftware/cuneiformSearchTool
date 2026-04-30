@@ -7,9 +7,15 @@ import (
 const (
 	menuTextOptions = "Options"
 
-	menuItemTextSaveSearch    = "Save search"
-	menuItemTextLoadSearch    = "Load search"
-	menuItemTextExportResults = "Export results"
+	menuTextResults                  = "Results"
+	menuItemTextResultsSaveSearch    = "Save search"
+	menuItemTextResultsLoadSearch    = "Load search"
+	menuItemTextResultsExportResults = "Export results"
+
+	menuTextView               = "View"
+	menuItemTextViewSearch     = "Search"
+	menuItemTextViewMassSearch = "Mass Search"
+	menuItemTextViewCorpus     = "Corpus"
 )
 
 type mainMenu interface {
@@ -20,7 +26,17 @@ type mmStruct struct {
 	mainMenu *fyne.MainMenu
 
 	// Menus
-	resultsMenu *fyne.Menu
+	optionsMenu *fyne.Menu
+
+	viewMenu       *fyne.Menu
+	viewSearch     *fyne.MenuItem
+	viewMassSearch *fyne.MenuItem
+	viewCorpus     *fyne.MenuItem
+
+	resultsMenu   *fyne.Menu
+	resultsSave   *fyne.MenuItem
+	resultsLoad   *fyne.MenuItem
+	resultsExport *fyne.MenuItem
 
 	// Reference to parent to pass information back and forth
 	gui guiInternal
@@ -29,16 +45,49 @@ type mmStruct struct {
 func newMainMenu(gui guiInternal) mainMenu {
 	mm := &mmStruct{gui: gui}
 
-	mm.resultsMenu = fyne.NewMenu(
-		menuTextOptions,
-		fyne.NewMenuItem(menuItemTextSaveSearch, func() {}),
-		fyne.NewMenuItem(menuItemTextLoadSearch, func() {}),
-		fyne.NewMenuItem(menuItemTextExportResults, func() {}),
+	mm.setupOptionsMenu()
+	mm.setupViewMenu()
+	mm.setupResultsMenu()
+
+	mm.mainMenu = fyne.NewMainMenu(
+		mm.optionsMenu,
+		mm.viewMenu,
+		mm.resultsMenu,
 	)
 
-	mm.mainMenu = fyne.NewMainMenu(mm.resultsMenu)
-
 	return mm
+}
+
+func (mm *mmStruct) setupOptionsMenu() {
+	mm.optionsMenu = fyne.NewMenu(
+		menuTextOptions,
+	)
+}
+
+func (mm *mmStruct) setupViewMenu() {
+	mm.viewSearch = fyne.NewMenuItem(menuItemTextViewSearch, func() { mm.gui.setViewSearch() })
+	mm.viewMassSearch = fyne.NewMenuItem(menuItemTextViewMassSearch, func() { mm.gui.setViewMassSearch() })
+	mm.viewCorpus = fyne.NewMenuItem(menuItemTextViewCorpus, func() { mm.gui.toggleCorpusPane() })
+
+	mm.viewMenu = fyne.NewMenu(
+		menuTextView,
+		mm.viewSearch,
+		mm.viewMassSearch,
+		mm.viewCorpus,
+	)
+}
+
+func (mm *mmStruct) setupResultsMenu() {
+	mm.resultsSave = fyne.NewMenuItem(menuItemTextResultsSaveSearch, func() {})
+	mm.resultsLoad = fyne.NewMenuItem(menuItemTextResultsLoadSearch, func() {})
+	mm.resultsExport = fyne.NewMenuItem(menuItemTextResultsExportResults, func() {})
+
+	mm.resultsMenu = fyne.NewMenu(
+		menuTextResults,
+		mm.resultsSave,
+		mm.resultsLoad,
+		mm.resultsExport,
+	)
 }
 
 func (mm *mmStruct) getMainMenu() *fyne.MainMenu {

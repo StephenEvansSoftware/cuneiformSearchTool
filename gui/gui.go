@@ -37,6 +37,9 @@ type GUI interface {
 // Keeps inner workings of the gui private but allows passing of information from pane to pane
 type guiInternal interface {
 	startNewSearch([][]string, *util.SearchSettings, time.Time)
+	setViewSearch()
+	setViewMassSearch()
+	toggleCorpusPane()
 }
 
 type gui struct {
@@ -46,10 +49,20 @@ type gui struct {
 	// Main menu
 	mainMenu mainMenu
 
-	// Default view panes
+	// Search view panes
+	searchView              fyne.CanvasObject
 	searchConfigurationPane searchConfigurationPane
 	searchResultsPane       searchResultsPane
-	corpusPane              corpusPane
+
+	// Mass search view panes
+	massSearchView              fyne.CanvasObject
+	massSearchConfigurationPane massSearchConfigurationPane
+	massSearchResultsPane       massSearchResultsPane
+
+	// Generic panes used across multiple views
+	corpusPane corpusPane
+	// Track if we want to have corpus visible or not
+	corpusView bool
 }
 
 // Package initialisation just covers the version for now
@@ -65,8 +78,11 @@ func NewGUI() GUI {
 
 	g.createMainMenu()
 
+	// Create all view panes
+	g.createViewPanes()
+
 	// Always start with default view loaded
-	g.createDefaultView()
+	g.setViewDefault()
 
 	return g
 }
@@ -76,22 +92,55 @@ func (g *gui) createMainMenu() {
 	g.mainWindow.SetMainMenu(g.mainMenu.getMainMenu())
 }
 
-func (g *gui) createDefaultView() {
-	// Set up individual panes
+func (g *gui) createViewPanes() {
+	// Generic panes used in multiple views
+	g.corpusPane = newCorpusPane()
+	g.corpusView = true
+
+	// Search panes
 	g.searchConfigurationPane = newSearchConfigurationPane(g)
 	g.searchResultsPane = newSearchResultsPane()
-	g.corpusPane = newCorpusPane()
-
-	// Create and set the layout of the panes
-	g.mainWindow.SetContent(
-		container.NewHSplit(
-			container.NewVSplit(
-				g.searchConfigurationPane.GetPane(),
-				g.searchResultsPane.GetPane(),
-			),
-			g.corpusPane.GetPane(),
+	g.searchView = container.NewHSplit(
+		container.NewVSplit(
+			g.searchConfigurationPane.GetPane(),
+			g.searchResultsPane.GetPane(),
 		),
+		g.corpusPane.GetPane(),
 	)
+
+	// Mass search panes
+	g.massSearchConfigurationPane = newMassSearchConfigurationPane(g)
+	g.massSearchResultsPane = newMassSearchResultsPane()
+	g.massSearchView = container.NewHSplit(
+		container.NewVSplit(
+			g.massSearchConfigurationPane.GetPane(),
+			g.massSearchResultsPane.GetPane(),
+		),
+		g.corpusPane.GetPane(),
+	)
+
+}
+
+func (g *gui) setViewDefault() {
+	// Default view is just the search view
+	g.setViewSearch()
+}
+
+func (g *gui) setViewSearch() {
+	g.mainWindow.SetContent(g.searchView)
+}
+
+func (g *gui) setViewMassSearch() {
+	g.mainWindow.SetContent(g.massSearchView)
+}
+
+func (g *gui) toggleCorpusPane() {
+	g.corpusView = !g.corpusView
+	if g.corpusView {
+		g.corpusPane.GetPane().Show()
+	} else {
+		g.corpusPane.GetPane().Hide()
+	}
 }
 
 func (g *gui) SetMainWindow() {

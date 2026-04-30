@@ -287,5 +287,5 @@ func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 // Interface implementations
 
 func (scp *scpStruct) GetPane() fyne.CanvasObject {
-	return scp.mainContainer // TODO: consider making the entire things scrollable to allow resizing panes without squashing their contents
+	return scp.mainContainer
 }
