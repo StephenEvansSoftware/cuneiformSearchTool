@@ -14,8 +14,11 @@ import (
 // This file creates the search configuration pane of the gui
 
 const (
-	labelTextSearchSettings = "Search:"
-	labelTextTerms          = "Search terms:"
+	labelTextSearch     = "Search:"
+	labelTextTerms      = "Search terms:"
+	labelTextMassSearch = "Mass Search:"
+
+	checkTextToggleMassSearch = "Toggle mass search"
 
 	buttonTextAddType = "Add type"
 	buttonTextSearch  = "SEARCH"
@@ -23,19 +26,24 @@ const (
 )
 
 var (
-	// TODO: consider enum or mapping here
-	confTextSearchScope = []string{
+	// TODO: consider enum or mapping for all these
+	searchConfTextScope = []string{
 		"All Texts",
 		"Select Corpus(s)",
 		"Select Text(s)",
 	}
 
-	// TODO: consider enum or mapping here
-	confTextSearchSettings = []string{
+	searchConfTextSettings = []string{
 		"Wrap line text during search",
 		"Print text meta information",
 		"Use POS instead of EPOS",
 		"Use FORM instead of FRAG",
+	}
+
+	massSearchConfTextSettings = []string{
+		"Use proper noun grouping",
+		"Limit search scope",
+		"Manual term selection",
 	}
 )
 
@@ -50,19 +58,26 @@ type scpStruct struct {
 	mainContainer *fyne.Container
 
 	// Search settings label
-	labelSearchSettings *widget.Label
+	labelSearch *widget.Label
 
 	// Horizontal configuration container
-	configuration       *fyne.Container
-	confScope           *widget.RadioGroup
-	confCorpusSelection *widget.CheckGroup
-	confSettings        *widget.CheckGroup
+	searchConfiguration       *fyne.Container
+	searchConfScope           *widget.RadioGroup
+	searchConfCorpusSelection *widget.CheckGroup
+	searchConfSettings        *widget.CheckGroup
 
 	// Search terms label
 	labelSearchTerms *widget.Label
+	// Toggle singular vs mass search
+	toggleMassSearch *widget.Check
+	labelMassSearch  *widget.Label
 
 	// Horizontal search terms container
 	terms *fyne.Container
+
+	// Mass search options
+	massSearchConfiguration *fyne.Container
+	massSearchConfSettings  *widget.CheckGroup
 
 	// Button to add additional search terms
 	termsAdd *widget.Button
@@ -80,21 +95,29 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 	// Setup main pane components
 	scPane.setupConfiguration()
 	scPane.setupSearchTerms()
+	scPane.setupMassSearch()
 	scPane.setupSearchButton()
 
 	// Setup labels
-	scPane.labelSearchSettings = widget.NewLabel(labelTextSearchSettings)
+	scPane.labelSearch = widget.NewLabel(labelTextSearch)
 	scPane.labelSearchTerms = widget.NewLabel(labelTextTerms)
+	scPane.labelMassSearch = widget.NewLabel(labelTextMassSearch)
 
 	// Create the finalised search configuration pane
 	scPane.mainContainer = container.NewVBox(
-		scPane.labelSearchSettings, // Settings label
-		scPane.configuration,       // Search configuration
+		scPane.labelSearch, // Settings label
 		widget.NewSeparator(),
-		scPane.labelSearchTerms, // Terms label
-		scPane.terms,            // Search terms
-		scPane.termsAdd,         // Add additional search terms
-		scPane.searchButton,     // Button to actually run the search
+		scPane.searchConfiguration, // Search configuration
+		widget.NewSeparator(),
+		container.NewBorder(
+			nil,
+			nil,
+			scPane.labelSearchTerms, // Terms label
+			scPane.toggleMassSearch,
+		),
+		scPane.terms,        // Search terms
+		scPane.termsAdd,     // Add additional search terms
+		scPane.searchButton, // Button to actually run the search
 	)
 
 	// Save reference to parent to start search
@@ -105,41 +128,41 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 
 func (scp *scpStruct) setupConfiguration() {
 	// Set up corpus selection so we can enable / disable it depending on selected scope
-	scp.confCorpusSelection = widget.NewCheckGroup([]string{}, func(changed []string) {})
+	scp.searchConfCorpusSelection = widget.NewCheckGroup([]string{}, func(changed []string) {})
 	for _, corpusText := range util.ListCorpusAndTexts() { // TODO: expand to select texts in accordion fashion
-		scp.confCorpusSelection.Append(corpusText.CorpusName)
+		scp.searchConfCorpusSelection.Append(corpusText.CorpusName)
 	}
 
 	// Radio selection of search scope
-	scp.confScope = widget.NewRadioGroup(
-		confTextSearchScope,
+	scp.searchConfScope = widget.NewRadioGroup(
+		searchConfTextScope,
 		func(s string) {
 			switch s {
-			case confTextSearchScope[0]: // TODO: manually checking position 0 is messy here
-				scp.confCorpusSelection.Disable()
+			case searchConfTextScope[0]: // TODO: manually checking position 0 is messy here
+				scp.searchConfCorpusSelection.Disable()
 			default:
-				scp.confCorpusSelection.Enable()
+				scp.searchConfCorpusSelection.Enable()
 			}
 		},
 	)
 	// Default scope selection of select corpus
-	scp.confScope.SetSelected(confTextSearchScope[1]) // TODO: manually checking position 1 is messy here
+	scp.searchConfScope.SetSelected(searchConfTextScope[1]) // TODO: manually checking position 1 is messy here
 	// Ensure scope is always set
-	scp.confScope.Required = true
+	scp.searchConfScope.Required = true
 
 	// Search settings
-	scp.confSettings = widget.NewCheckGroup(
-		confTextSearchSettings,
+	scp.searchConfSettings = widget.NewCheckGroup(
+		searchConfTextSettings,
 		func(changed []string) {}, // TODO: is this needed further down the line?
 	)
 
 	// Add the search configuration panes in correct order
-	scp.configuration = container.NewHBox(
-		scp.confScope,
+	scp.searchConfiguration = container.NewHBox(
+		scp.searchConfScope,
 		widget.NewSeparator(),
-		container.NewVScroll(scp.confCorpusSelection),
+		container.NewVScroll(scp.searchConfCorpusSelection),
 		widget.NewSeparator(),
-		scp.confSettings,
+		scp.searchConfSettings,
 	)
 }
 
@@ -200,6 +223,24 @@ func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
 	return encapsulatedTerm
 }
 
+func (scp *scpStruct) setupMassSearch() {
+	scp.toggleMassSearch = widget.NewCheck(
+		checkTextToggleMassSearch,
+		func(b bool) {
+			// TODO: change from term selection container to mass search container
+		},
+	)
+
+	scp.massSearchConfSettings = widget.NewCheckGroup(
+		massSearchConfTextSettings,
+		func(changed []string) {},
+	)
+
+	scp.massSearchConfiguration = container.NewHBox(
+		scp.massSearchConfSettings,
+	)
+}
+
 func (scp *scpStruct) setupSearchButton() {
 	scp.searchButton = widget.NewButton(buttonTextSearch, func() {
 		// TODO TODO TODO: the ui doesn't change until the search if fully complete
@@ -245,31 +286,31 @@ func (scp *scpStruct) setupSearchButton() {
 
 		// Collect all search configuration and settings
 		searchSettings := &util.SearchSettings{}
-		switch scp.confScope.Selected { // TODO: have this be handled by changing search settings when clicked instead of getting it here
-		case confTextSearchScope[0]: // Search all texts
+		switch scp.searchConfScope.Selected { // TODO: have this be handled by changing search settings when clicked instead of getting it here
+		case searchConfTextScope[0]: // Search all texts
 			searchSettings.SearchAllTexts = true
-		case confTextSearchScope[1]: // Search selected corpus'
-			searchSettings.SelectedCorpus = scp.confCorpusSelection.Selected
-		case confTextSearchScope[2]: // Search selected texts // TODO
-			searchSettings.SelectedCorpus = scp.confCorpusSelection.Selected
+		case searchConfTextScope[1]: // Search selected corpus'
+			searchSettings.SelectedCorpus = scp.searchConfCorpusSelection.Selected
+		case searchConfTextScope[2]: // Search selected texts // TODO
+			searchSettings.SelectedCorpus = scp.searchConfCorpusSelection.Selected
 		default: // Should never happen
 			panic("cannot determine configuration search scope")
 		}
 		// TODO: same as above, have it automatically set the settings whenever clicked
-		for _, ss := range scp.confSettings.Selected {
-			if ss == confTextSearchSettings[0] {
+		for _, ss := range scp.searchConfSettings.Selected {
+			if ss == searchConfTextSettings[0] {
 				searchSettings.SearchWrappedText = true
 				continue
 			}
-			if ss == confTextSearchSettings[1] {
+			if ss == searchConfTextSettings[1] {
 				searchSettings.PrintTextMetaInformation = true
 				continue
 			}
-			if ss == confTextSearchSettings[2] {
+			if ss == searchConfTextSettings[2] {
 				searchSettings.UsePOS = true
 				continue
 			}
-			if ss == confTextSearchSettings[3] {
+			if ss == searchConfTextSettings[3] {
 				searchSettings.UseFORM = true
 				continue
 			}

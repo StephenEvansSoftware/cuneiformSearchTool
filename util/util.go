@@ -114,6 +114,19 @@ type SearchSettings struct {
 	UseFORM                  bool
 }
 
+type MassSearchSettings struct {
+	// Do we want to group proper nouns for this mass search
+	UseProperNounGrouping bool
+
+	// Search scope of number of terms
+	SearchFrom int
+	SearchTo   int
+
+	// Can manually set a selection of terms
+	// TODO: make a struct for this. 3d slice is annoying to work with
+	ManualTermsToSearch [][][]string
+}
+
 type PrintSettings struct {
 	PrintTextMetaInformation bool
 	UsePOS                   bool

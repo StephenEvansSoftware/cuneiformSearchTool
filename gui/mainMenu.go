@@ -12,10 +12,9 @@ const (
 	menuItemTextResultsLoadSearch    = "Load search"
 	menuItemTextResultsExportResults = "Export results"
 
-	menuTextView               = "View"
-	menuItemTextViewSearch     = "Search"
-	menuItemTextViewMassSearch = "Mass Search"
-	menuItemTextViewCorpus     = "Corpus"
+	menuTextView           = "View"
+	menuItemTextViewSearch = "Search"
+	menuItemTextViewCorpus = "Corpus"
 )
 
 type mainMenu interface {
@@ -28,10 +27,9 @@ type mmStruct struct {
 	// Menus
 	optionsMenu *fyne.Menu
 
-	viewMenu       *fyne.Menu
-	viewSearch     *fyne.MenuItem
-	viewMassSearch *fyne.MenuItem
-	viewCorpus     *fyne.MenuItem
+	viewMenu   *fyne.Menu
+	viewSearch *fyne.MenuItem
+	viewCorpus *fyne.MenuItem
 
 	resultsMenu   *fyne.Menu
 	resultsSave   *fyne.MenuItem
@@ -65,14 +63,13 @@ func (mm *mmStruct) setupOptionsMenu() {
 }
 
 func (mm *mmStruct) setupViewMenu() {
+	// TODO: disable the menu item for views once the view is loaded
 	mm.viewSearch = fyne.NewMenuItem(menuItemTextViewSearch, func() { mm.gui.setViewSearch() })
-	mm.viewMassSearch = fyne.NewMenuItem(menuItemTextViewMassSearch, func() { mm.gui.setViewMassSearch() })
 	mm.viewCorpus = fyne.NewMenuItem(menuItemTextViewCorpus, func() { mm.gui.toggleCorpusPane() })
 
 	mm.viewMenu = fyne.NewMenu(
 		menuTextView,
 		mm.viewSearch,
-		mm.viewMassSearch,
 		mm.viewCorpus,
 	)
 }

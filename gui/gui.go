@@ -38,7 +38,6 @@ type GUI interface {
 type guiInternal interface {
 	startNewSearch([][]string, *util.SearchSettings, time.Time)
 	setViewSearch()
-	setViewMassSearch()
 	toggleCorpusPane()
 }
 
@@ -53,11 +52,6 @@ type gui struct {
 	searchView              fyne.CanvasObject
 	searchConfigurationPane searchConfigurationPane
 	searchResultsPane       searchResultsPane
-
-	// Mass search view panes
-	massSearchView              fyne.CanvasObject
-	massSearchConfigurationPane massSearchConfigurationPane
-	massSearchResultsPane       massSearchResultsPane
 
 	// Generic panes used across multiple views
 	corpusPane corpusPane
@@ -107,17 +101,6 @@ func (g *gui) createViewPanes() {
 		),
 		g.corpusPane.getPane(),
 	)
-
-	// Mass search panes
-	g.massSearchConfigurationPane = newMassSearchConfigurationPane(g)
-	g.massSearchResultsPane = newMassSearchResultsPane()
-	g.massSearchView = container.NewHSplit(
-		container.NewVSplit(
-			g.massSearchConfigurationPane.getPane(),
-			g.massSearchResultsPane.getPane(),
-		),
-		g.corpusPane.getPane(),
-	)
 }
 
 func (g *gui) setViewDefault() {
@@ -127,10 +110,6 @@ func (g *gui) setViewDefault() {
 
 func (g *gui) setViewSearch() {
 	g.mainWindow.SetContent(g.searchView)
-}
-
-func (g *gui) setViewMassSearch() {
-	g.mainWindow.SetContent(g.massSearchView)
 }
 
 func (g *gui) toggleCorpusPane() {
