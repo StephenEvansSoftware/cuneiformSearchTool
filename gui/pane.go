@@ -7,5 +7,5 @@ import (
 // Simple interface for individual elements of the gui
 
 type paneGetter interface {
-	GetPane() fyne.CanvasObject
+	getPane() fyne.CanvasObject
 }

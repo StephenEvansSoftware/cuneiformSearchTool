@@ -34,7 +34,7 @@ func newCorpusPane() corpusPane {
 
 	cpp.mainContainer = container.NewVSplit(
 		cpp.corpus,
-		cpp.textDisplay.GetPane(),
+		cpp.textDisplay.getPane(),
 	)
 
 	return cpp
@@ -105,6 +105,6 @@ func (cpp *cpStruct) setupTextDisplay() {
 	cpp.textDisplay = newTextDisplay()
 }
 
-func (cpp *cpStruct) GetPane() fyne.CanvasObject {
+func (cpp *cpStruct) getPane() fyne.CanvasObject {
 	return cpp.mainContainer
 }

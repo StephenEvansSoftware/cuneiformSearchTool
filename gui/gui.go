@@ -102,10 +102,10 @@ func (g *gui) createViewPanes() {
 	g.searchResultsPane = newSearchResultsPane()
 	g.searchView = container.NewHSplit(
 		container.NewVSplit(
-			g.searchConfigurationPane.GetPane(),
-			g.searchResultsPane.GetPane(),
+			g.searchConfigurationPane.getPane(),
+			g.searchResultsPane.getPane(),
 		),
-		g.corpusPane.GetPane(),
+		g.corpusPane.getPane(),
 	)
 
 	// Mass search panes
@@ -113,12 +113,11 @@ func (g *gui) createViewPanes() {
 	g.massSearchResultsPane = newMassSearchResultsPane()
 	g.massSearchView = container.NewHSplit(
 		container.NewVSplit(
-			g.massSearchConfigurationPane.GetPane(),
-			g.massSearchResultsPane.GetPane(),
+			g.massSearchConfigurationPane.getPane(),
+			g.massSearchResultsPane.getPane(),
 		),
-		g.corpusPane.GetPane(),
+		g.corpusPane.getPane(),
 	)
-
 }
 
 func (g *gui) setViewDefault() {
@@ -137,9 +136,9 @@ func (g *gui) setViewMassSearch() {
 func (g *gui) toggleCorpusPane() {
 	g.corpusView = !g.corpusView
 	if g.corpusView {
-		g.corpusPane.GetPane().Show()
+		g.corpusPane.getPane().Show()
 	} else {
-		g.corpusPane.GetPane().Hide()
+		g.corpusPane.getPane().Hide()
 	}
 }
 

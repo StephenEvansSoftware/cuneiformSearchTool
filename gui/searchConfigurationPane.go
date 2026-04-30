@@ -286,6 +286,6 @@ func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 
 // Interface implementations
 
-func (scp *scpStruct) GetPane() fyne.CanvasObject {
+func (scp *scpStruct) getPane() fyne.CanvasObject {
 	return scp.mainContainer
 }

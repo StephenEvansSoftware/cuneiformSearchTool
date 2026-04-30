@@ -26,6 +26,6 @@ func newMassSearchConfigurationPane(gui guiInternal) massSearchConfigurationPane
 	return mscPane
 }
 
-func (mscp *mscpStruct) GetPane() fyne.CanvasObject {
+func (mscp *mscpStruct) getPane() fyne.CanvasObject {
 	return mscp.mainContainer
 }

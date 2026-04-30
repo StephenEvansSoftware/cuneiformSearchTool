@@ -59,7 +59,7 @@ func newSearchResultsPane() searchResultsPane {
 	// Create the finalised search result pane
 	srPane.mainContainer = container.NewHSplit(
 		srPane.results,
-		container.NewScroll(srPane.textDisplay.GetPane()),
+		container.NewScroll(srPane.textDisplay.getPane()),
 	)
 	return srPane
 }
@@ -89,7 +89,7 @@ func (srp *srpStruct) setupTextDisplay() {
 	srp.textDisplay = newTextDisplay()
 }
 
-func (srp *srpStruct) GetPane() fyne.CanvasObject {
+func (srp *srpStruct) getPane() fyne.CanvasObject {
 	return srp.mainContainer
 }
 

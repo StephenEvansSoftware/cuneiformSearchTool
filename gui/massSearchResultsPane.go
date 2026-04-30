@@ -24,6 +24,6 @@ func newMassSearchResultsPane() massSearchResultsPane {
 	return msrPane
 }
 
-func (msrp *msrpStruct) GetPane() fyne.CanvasObject {
+func (msrp *msrpStruct) getPane() fyne.CanvasObject {
 	return msrp.mainContainer
 }

@@ -51,7 +51,7 @@ func newTextDisplay() textDisplayPane {
 	return tdp
 }
 
-func (tdp *tdpStruct) GetPane() fyne.CanvasObject {
+func (tdp *tdpStruct) getPane() fyne.CanvasObject {
 	return tdp.mainContainer
 }
 
