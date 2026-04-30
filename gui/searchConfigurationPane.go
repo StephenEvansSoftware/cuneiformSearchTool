@@ -66,21 +66,20 @@ type scpStruct struct {
 	searchConfCorpusSelection *widget.CheckGroup
 	searchConfSettings        *widget.CheckGroup
 
-	// Search terms label
+	// Lower configuration labels
 	labelSearchTerms *widget.Label
+	labelMassSearch  *widget.Label
 	// Toggle singular vs mass search
 	toggleMassSearch *widget.Check
-	labelMassSearch  *widget.Label
 
-	// Horizontal search terms container
-	terms *fyne.Container
+	// Terms container
+	terms         *fyne.Container
+	termSelection *fyne.Container
+	termAdd       *widget.Button
 
 	// Mass search options
 	massSearchConfiguration *fyne.Container
 	massSearchConfSettings  *widget.CheckGroup
-
-	// Button to add additional search terms
-	termsAdd *widget.Button
 
 	// Button to actually run the search
 	searchButton *widget.Button
@@ -103,6 +102,10 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 	scPane.labelSearchTerms = widget.NewLabel(labelTextTerms)
 	scPane.labelMassSearch = widget.NewLabel(labelTextMassSearch)
 
+	// Hide toggleable mass search for now
+	scPane.labelMassSearch.Hide()
+	scPane.massSearchConfiguration.Hide()
+
 	// Create the finalised search configuration pane
 	scPane.mainContainer = container.NewVBox(
 		scPane.labelSearch, // Settings label
@@ -110,13 +113,15 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 		scPane.searchConfiguration, // Search configuration
 		widget.NewSeparator(),
 		container.NewBorder(
-			nil,
-			nil,
-			scPane.labelSearchTerms, // Terms label
+			nil, nil,
+			container.NewVBox(
+				scPane.labelSearchTerms,
+				scPane.labelMassSearch,
+			),
 			scPane.toggleMassSearch,
 		),
-		scPane.terms,        // Search terms
-		scPane.termsAdd,     // Add additional search terms
+		scPane.terms,
+		scPane.massSearchConfiguration,
 		scPane.searchButton, // Button to actually run the search
 	)
 
@@ -167,11 +172,15 @@ func (scp *scpStruct) setupConfiguration() {
 }
 
 func (scp *scpStruct) setupSearchTerms() {
-	scp.terms = container.NewHBox()
-	scp.terms.Add(scp.createNewSearchTerm())
-	scp.termsAdd = widget.NewButton(buttonTextAddTerm, func() {
-		scp.terms.Add(scp.createNewSearchTerm())
+	scp.termSelection = container.NewHBox()
+	scp.termSelection.Add(scp.createNewSearchTerm())
+	scp.termAdd = widget.NewButton(buttonTextAddTerm, func() {
+		scp.termSelection.Add(scp.createNewSearchTerm())
 	})
+	scp.terms = container.NewVBox(
+		scp.termSelection,
+		scp.termAdd,
+	)
 }
 
 func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
@@ -227,7 +236,17 @@ func (scp *scpStruct) setupMassSearch() {
 	scp.toggleMassSearch = widget.NewCheck(
 		checkTextToggleMassSearch,
 		func(b bool) {
-			// TODO: change from term selection container to mass search container
+			if b {
+				scp.labelSearchTerms.Hide()
+				scp.labelMassSearch.Show()
+				scp.terms.Hide()
+				scp.massSearchConfiguration.Show()
+			} else {
+				scp.labelMassSearch.Hide()
+				scp.labelSearchTerms.Show()
+				scp.massSearchConfiguration.Hide()
+				scp.terms.Show()
+			}
 		},
 	)
 
@@ -321,11 +340,10 @@ func (scp *scpStruct) setupSearchButton() {
 	})
 }
 
+// TODO: take from above method and put in here
 func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 	return nil, nil
 }
-
-// Interface implementations
 
 func (scp *scpStruct) getPane() fyne.CanvasObject {
 	return scp.mainContainer
