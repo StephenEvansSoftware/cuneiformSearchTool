@@ -98,6 +98,9 @@ var (
 	inputCorpus  = "./jsonFiles/corpus"
 
 	corpusTextInfo = []*CorpusInfo{}
+
+	totalTermsWithoutProperNounGrouping int
+	totalTermsWithProperNounGrouping    int
 )
 
 type CorpusSearchResult struct {
@@ -144,11 +147,14 @@ type MassSearchSettings struct {
 	// Do we want to group proper nouns for this mass search
 	UseProperNounGrouping bool
 
+	// Do we want to do >13k searches all at once?
+	LimitSearchScope bool
 	// Search scope of number of terms
 	SearchFrom int
 	SearchTo   int
 
 	// Can manually set a selection of terms
+	ManualTermSelection bool
 	// TODO: make a struct for this. 3d slice is annoying to work with
 	ManualTermsToSearch [][][]string
 }
@@ -164,6 +170,9 @@ func init() {
 	if err := loadCorpusTexts(); err != nil {
 		panic(err.Error())
 	}
+
+	totalTermsWithoutProperNounGrouping = len(ValidTypes)
+	totalTermsWithProperNounGrouping = len(validTypesSansProperNouns) + 1
 }
 
 // Load corpus names and text paths
@@ -573,4 +582,47 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string 
 	}
 
 	return fmt.Sprintf("%s\nEnd of text", textReturn)
+}
+
+func GetTotalMassSearches(termsLength int, properNounGrouping bool) int {
+	baseN := totalTermsWithoutProperNounGrouping
+	if properNounGrouping {
+		baseN = totalTermsWithProperNounGrouping
+	}
+	// Avoiding importing the maths package to do a simple pow
+	output := baseN
+	for i := 1; i < termsLength; i++ {
+		output *= baseN
+	}
+	return output
+}
+
+func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearchSettings) {
+	/*
+		TODO: a lot...
+		1. using the settings, create a hash
+		2. check if a file exists with that hash included in its name
+		3. load file
+		4. check if file contains the settings as they are in the current search
+			4a. yes: we have found our previous attempt at searching
+					count the number of entries
+			4b. no: we create the file with our hash and search and mass search settings
+		5. compute all possible permutations of the types depending on settings
+			note: this will be n^r
+				n = total types being used (all Valid types or validSansProperNouns + 1)
+				r = term length
+			5a. skip the first X terms where X is the number of current entires (if applicable)
+		6. start the search
+			6a. each successful search we append to file
+				ordering of corpus results is alphabitical
+				format:
+							c1	c2	c3
+					[a,a,a]	x	y	z
+					[a,a,b]	x2	y2	z2
+				will use csv to represent, so ends up looking like
+
+					,c1,c2,c3
+					"[a,a,a]",x,y,z
+					"[a,a,b]",x2,y2,z2
+	*/
 }

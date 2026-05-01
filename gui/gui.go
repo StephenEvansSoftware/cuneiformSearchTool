@@ -36,7 +36,8 @@ type GUI interface {
 
 // Keeps inner workings of the gui private but allows passing of information from pane to pane
 type guiInternal interface {
-	startNewSearch([][]string, *util.SearchSettings, time.Time)
+	startNewTermsSearch([][]string, *util.SearchSettings, time.Time)
+	startNewMassSearch(*util.SearchSettings, *util.MassSearchSettings, time.Time)
 	setViewSearch()
 	toggleCorpusPane()
 }
@@ -130,7 +131,7 @@ func (g *gui) ShowGUI() {
 }
 
 // Run a new search with the given search terms
-func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettings, startTime time.Time) {
+func (g *gui) startNewTermsSearch(terms [][]string, searchSettings *util.SearchSettings, startTime time.Time) {
 	if err := util.ValidateTypes(terms); err != nil {
 		g.searchResultsPane.setResultInfo("Search error:", err.Error())
 		g.searchConfigurationPane.finishSearch()
@@ -156,4 +157,8 @@ func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettin
 	g.searchConfigurationPane.finishSearch()
 
 	// TODO: also disable all other widgets associated with search configuration while search is running
+}
+
+func (g *gui) startNewMassSearch(searchSettings *util.SearchSettings, massSearchSettings *util.MassSearchSettings, startTime time.Time) {
+	util.RunMassSearch(searchSettings, massSearchSettings)
 }

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -82,8 +83,13 @@ type scpStruct struct {
 	termAdd       *widget.Button
 
 	// Mass search options
-	massSearchConfiguration *fyne.Container
-	massSearchConfSettings  *widget.CheckGroup
+	massSearchConfiguration           *fyne.Container
+	massSearchConfTermLengthSelection *widget.Select
+	massSearchConfInfo                *widget.RichText
+	// Easier to handle a set of individual widget.Check than widget.CheckGroup
+	massSearchConfSettingProperNounGrouping  *widget.Check
+	massSearchConfSettingLimitSearchScope    *widget.Check
+	massSearchConfSettingManualTermSelection *widget.Check
 
 	// Buttons to actually run the searches
 	searchButtonTerms *widget.Button
@@ -262,13 +268,31 @@ func (scp *scpStruct) setupMassSearch() {
 		},
 	)
 
-	scp.massSearchConfSettings = widget.NewCheckGroup(
-		massSearchConfTextSettings,
-		func(changed []string) {},
+	scp.massSearchConfSettingProperNounGrouping = widget.NewCheck(massSearchConfTextSettings[0], func(b bool) {})
+	scp.massSearchConfSettingLimitSearchScope = widget.NewCheck(massSearchConfTextSettings[1], func(b bool) {})
+	scp.massSearchConfSettingManualTermSelection = widget.NewCheck(massSearchConfTextSettings[2], func(b bool) {})
+
+	scp.massSearchConfInfo = widget.NewRichTextWithText("Total searches\nlisted here\nonce terms\nselected")
+	scp.massSearchConfTermLengthSelection = widget.NewSelect(
+		[]string{"2", "3", "4", "5"},
+		func(s string) {
+			massSearchTermsLength, _ := strconv.Atoi(s)
+			scp.massSearchConfInfo.ParseMarkdown(fmt.Sprintf("Term length = %d", massSearchTermsLength))
+			scp.massSearchConfInfo.AppendMarkdown("Total searches:")
+			scp.massSearchConfInfo.AppendMarkdown(fmt.Sprintf("*%d*", util.GetTotalMassSearches(massSearchTermsLength, scp.massSearchConfSettingProperNounGrouping.Checked)))
+		},
 	)
+	scp.massSearchConfTermLengthSelection.PlaceHolder = "Term Length"
 
 	scp.massSearchConfiguration = container.NewHBox(
-		scp.massSearchConfSettings,
+		container.NewVBox(
+			scp.massSearchConfSettingProperNounGrouping,
+			scp.massSearchConfSettingLimitSearchScope,
+			scp.massSearchConfSettingManualTermSelection,
+		),
+		scp.massSearchConfTermLengthSelection,
+		//		container.NewScroll(scp.massSearchConfInfo),
+		scp.massSearchConfInfo,
 	)
 }
 
@@ -291,17 +315,31 @@ func (scp *scpStruct) setupSearchTermsButton() {
 		scp.startNewSearch()
 		// Inform gui that a new search is happening and let it handle the rest
 		fyne.Do(func() {
-			scp.gui.startNewSearch(collectedSearchTerms, searchSettings, timeStart)
+			scp.gui.startNewTermsSearch(collectedSearchTerms, searchSettings, timeStart)
 		})
 	})
 }
 
 func (scp *scpStruct) setupSearchMassButton() {
-	// TODO TODO TODO
 	scp.searchButtonMass = widget.NewButton(buttonTextSearchMass, func() {
+		// Run a timer to see how long the mass search takes (a long time)
+		timeStart := time.Now()
 
-	},
-	)
+		// Collect search settings and mass search settings
+		searchSettings, err := scp.getSearchSettings()
+		if err != nil {
+			panic(err) // TODO: handle better
+		}
+		massSearchSettings, err := scp.getMassSearchSettings()
+		if err != nil {
+			panic(err) // TODO: handle better
+		}
+
+		scp.startNewSearch()
+		fyne.Do(func() {
+			scp.gui.startNewMassSearch(searchSettings, massSearchSettings, timeStart)
+		})
+	})
 }
 
 func (scp *scpStruct) getSearchTerms() ([][]string, error) {
@@ -341,8 +379,6 @@ func (scp *scpStruct) getSearchTerms() ([][]string, error) {
 
 // TODO: take from above method and put in here
 func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
-
-	// Collect all search configuration and settings
 	searchSettings := &util.SearchSettings{}
 	switch scp.searchConfScope.Selected { // TODO: have this be handled by changing search settings when clicked instead of getting it here
 	case searchConfTextScope[0]: // Search all texts
@@ -377,6 +413,16 @@ func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 	return searchSettings, nil
 }
 
+func (scp *scpStruct) getMassSearchSettings() (*util.MassSearchSettings, error) {
+	massSearchSettings := &util.MassSearchSettings{
+		UseProperNounGrouping: scp.massSearchConfSettingProperNounGrouping.Checked,
+		LimitSearchScope:      scp.massSearchConfSettingLimitSearchScope.Checked,
+		ManualTermSelection:   scp.massSearchConfSettingManualTermSelection.Checked,
+	}
+
+	return massSearchSettings, nil
+}
+
 func (scp *scpStruct) getPane() fyne.CanvasObject {
 	return scp.mainContainer
 }
@@ -388,7 +434,9 @@ func (scp *scpStruct) startNewSearch() {
 	scp.searchConfSettings.Disable()
 	scp.toggleMassSearch.Disable()
 	scp.termAdd.Disable()
-	scp.massSearchConfSettings.Disable()
+	scp.massSearchConfSettingProperNounGrouping.Disable()
+	scp.massSearchConfSettingLimitSearchScope.Disable()
+	scp.massSearchConfSettingManualTermSelection.Disable()
 	scp.searchButtonTerms.Disable()
 	scp.searchButtonMass.Disable()
 }
@@ -400,7 +448,9 @@ func (scp *scpStruct) finishSearch() {
 	scp.searchConfSettings.Enable()
 	scp.toggleMassSearch.Enable()
 	scp.termAdd.Enable()
-	scp.massSearchConfSettings.Enable()
+	scp.massSearchConfSettingProperNounGrouping.Enable()
+	scp.massSearchConfSettingLimitSearchScope.Enable()
+	scp.massSearchConfSettingManualTermSelection.Enable()
 	scp.searchButtonTerms.Enable()
 	scp.searchButtonMass.Enable()
 }
