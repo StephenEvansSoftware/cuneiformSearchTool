@@ -15,14 +15,15 @@ import (
 
 const (
 	labelTextSearch     = "Search:"
-	labelTextTerms      = "Search terms:"
+	labelTextTerms      = "Terms Search:"
 	labelTextMassSearch = "Mass Search:"
 
 	checkTextToggleMassSearch = "Toggle mass search"
 
-	buttonTextAddType = "Add type"
-	buttonTextSearch  = "SEARCH"
-	buttonTextAddTerm = "Add another\nsearch term"
+	buttonTextAddType     = "Add type"
+	buttonTextAddTerm     = "Add another\nsearch term"
+	buttonTextSearchTerms = "RUN TERMS SEARCH"
+	buttonTextSearchMass  = "RUN MASS SEARCH"
 )
 
 var (
@@ -50,6 +51,9 @@ var (
 // Publically facing functionality of the search configuration pane
 type searchConfigurationPane interface {
 	paneGetter
+
+	startNewSearch()
+	finishSearch()
 }
 
 // Contains all objects related to the search configuration pane
@@ -81,8 +85,9 @@ type scpStruct struct {
 	massSearchConfiguration *fyne.Container
 	massSearchConfSettings  *widget.CheckGroup
 
-	// Button to actually run the search
-	searchButton *widget.Button
+	// Buttons to actually run the searches
+	searchButtonTerms *widget.Button
+	searchButtonMass  *widget.Button
 
 	// Reference to parent gui object to pass information to
 	gui guiInternal
@@ -95,7 +100,8 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 	scPane.setupConfiguration()
 	scPane.setupSearchTerms()
 	scPane.setupMassSearch()
-	scPane.setupSearchButton()
+	scPane.setupSearchTermsButton()
+	scPane.setupSearchMassButton()
 
 	// Setup labels
 	scPane.labelSearch = widget.NewLabel(labelTextSearch)
@@ -105,6 +111,7 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 	// Hide toggleable mass search for now
 	scPane.labelMassSearch.Hide()
 	scPane.massSearchConfiguration.Hide()
+	scPane.searchButtonMass.Hide()
 
 	// Create the finalised search configuration pane
 	scPane.mainContainer = container.NewVBox(
@@ -122,7 +129,8 @@ func newSearchConfigurationPane(gui guiInternal) searchConfigurationPane {
 		),
 		scPane.terms,
 		scPane.massSearchConfiguration,
-		scPane.searchButton, // Button to actually run the search
+		scPane.searchButtonTerms,
+		scPane.searchButtonMass,
 	)
 
 	// Save reference to parent to start search
@@ -241,11 +249,15 @@ func (scp *scpStruct) setupMassSearch() {
 				scp.labelMassSearch.Show()
 				scp.terms.Hide()
 				scp.massSearchConfiguration.Show()
+				scp.searchButtonTerms.Hide()
+				scp.searchButtonMass.Show()
 			} else {
 				scp.labelMassSearch.Hide()
 				scp.labelSearchTerms.Show()
 				scp.massSearchConfiguration.Hide()
 				scp.terms.Show()
+				scp.searchButtonMass.Hide()
+				scp.searchButtonTerms.Show()
 			}
 		},
 	)
@@ -260,91 +272,135 @@ func (scp *scpStruct) setupMassSearch() {
 	)
 }
 
-func (scp *scpStruct) setupSearchButton() {
-	scp.searchButton = widget.NewButton(buttonTextSearch, func() {
-		// TODO TODO TODO: the ui doesn't change until the search if fully complete
-		//					so disable the button and set up a go routine to run the function
-		//					before re-enabling after the search is complete
-		//					also disable all other search settings while search running
-
+func (scp *scpStruct) setupSearchTermsButton() {
+	scp.searchButtonTerms = widget.NewButton(buttonTextSearchTerms, func() {
 		// Run a timer to see how long each search takes
 		timeStart := time.Now()
 
-		// Retrieve all search terms
-		collectedSearchTerms := [][]string{}
-		for sti, st := range scp.terms.Objects { // Overarching search terms container
-			// Create a new set of terms
-			collectedSearchTerms = append(collectedSearchTerms, []string{})
-			for _, sto := range st.(*fyne.Container).Objects { // Types and buttons, and button
-				// Check for *fyne.Container as this holds our actual types
-				switch t := sto.(type) {
-				case *fyne.Container:
-					for _, to := range t.Objects { // Types and buttons
-						for _, too := range to.(*fyne.Container).Objects {
-							switch toot := too.(type) {
-							case *widget.Select: // The actual search type we're looking for
-								// Ignore selections that haven't been selected
-								if selected := toot.Selected; selected != "" {
-									// Add the type to our current term
-									collectedSearchTerms[sti] = append(collectedSearchTerms[sti], selected)
-								}
-							case *widget.Button: // "Remove type" button, ignore
-							default: // Unknown type, should never happen
-								// TODO: handle better?
-								panic(fmt.Sprintf("term contains non-expected type: %v", toot))
+		// Collect search terms and settings
+		collectedSearchTerms, err := scp.getSearchTerms()
+		if err != nil {
+			panic(err) // TODO: handle better
+		}
+		searchSettings, err := scp.getSearchSettings()
+		if err != nil {
+			panic(err) // TODO: handle better
+		}
+
+		// TODO: this isn't quite right, but it'll do for now
+		scp.startNewSearch()
+		// Inform gui that a new search is happening and let it handle the rest
+		fyne.Do(func() {
+			scp.gui.startNewSearch(collectedSearchTerms, searchSettings, timeStart)
+		})
+	})
+}
+
+func (scp *scpStruct) setupSearchMassButton() {
+	// TODO TODO TODO
+	scp.searchButtonMass = widget.NewButton(buttonTextSearchMass, func() {
+
+	},
+	)
+}
+
+func (scp *scpStruct) getSearchTerms() ([][]string, error) {
+	// Retrieve all search terms
+	collectedSearchTerms := [][]string{}
+	for sti, st := range scp.termSelection.Objects { // Overarching search terms container
+		// Create a new set of terms
+		collectedSearchTerms = append(collectedSearchTerms, []string{})
+		for _, sto := range st.(*fyne.Container).Objects { // Types and buttons, and button
+			// Check for *fyne.Container as this holds our actual types
+			switch t := sto.(type) {
+			case *fyne.Container:
+				for _, to := range t.Objects { // Types and buttons
+					for _, too := range to.(*fyne.Container).Objects {
+						switch toot := too.(type) {
+						case *widget.Select: // The actual search type we're looking for
+							// Ignore selections that haven't been selected
+							if selected := toot.Selected; selected != "" {
+								// Add the type to our current term
+								collectedSearchTerms[sti] = append(collectedSearchTerms[sti], selected)
 							}
+						case *widget.Button: // "Remove type" button, ignore
+						default: // Unknown type, should never happen
+							return nil, fmt.Errorf("term contains non-expected type: %v", toot)
 						}
 					}
-				case *widget.Button: // "Add type" button, ignore
-				default: // Unknown type, should never happen
-					// TODO: handle better?
-					panic(fmt.Sprintf("terms contain non-expected type: %v", sto))
 				}
+			case *widget.Button: // "Add type" button, ignore
+			default: // Unknown type, should never happen
+				// TODO: handle better?
+				return nil, fmt.Errorf("terms contain non-expected type: %v", sto)
 			}
 		}
-
-		// Collect all search configuration and settings
-		searchSettings := &util.SearchSettings{}
-		switch scp.searchConfScope.Selected { // TODO: have this be handled by changing search settings when clicked instead of getting it here
-		case searchConfTextScope[0]: // Search all texts
-			searchSettings.SearchAllTexts = true
-		case searchConfTextScope[1]: // Search selected corpus'
-			searchSettings.SelectedCorpus = scp.searchConfCorpusSelection.Selected
-		case searchConfTextScope[2]: // Search selected texts // TODO
-			searchSettings.SelectedCorpus = scp.searchConfCorpusSelection.Selected
-		default: // Should never happen
-			panic("cannot determine configuration search scope")
-		}
-		// TODO: same as above, have it automatically set the settings whenever clicked
-		for _, ss := range scp.searchConfSettings.Selected {
-			if ss == searchConfTextSettings[0] {
-				searchSettings.SearchWrappedText = true
-				continue
-			}
-			if ss == searchConfTextSettings[1] {
-				searchSettings.PrintTextMetaInformation = true
-				continue
-			}
-			if ss == searchConfTextSettings[2] {
-				searchSettings.UsePOS = true
-				continue
-			}
-			if ss == searchConfTextSettings[3] {
-				searchSettings.UseFORM = true
-				continue
-			}
-		}
-
-		// Inform gui that a new search is happening and let it handle the rest
-		scp.gui.startNewSearch(collectedSearchTerms, searchSettings, timeStart)
-	})
+	}
+	return collectedSearchTerms, nil
 }
 
 // TODO: take from above method and put in here
 func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
-	return nil, nil
+
+	// Collect all search configuration and settings
+	searchSettings := &util.SearchSettings{}
+	switch scp.searchConfScope.Selected { // TODO: have this be handled by changing search settings when clicked instead of getting it here
+	case searchConfTextScope[0]: // Search all texts
+		searchSettings.SearchAllTexts = true
+	case searchConfTextScope[1]: // Search selected corpus'
+		searchSettings.SelectedCorpus = scp.searchConfCorpusSelection.Selected
+	case searchConfTextScope[2]: // Search selected texts // TODO
+		searchSettings.SelectedCorpus = scp.searchConfCorpusSelection.Selected
+	default: // Should never happen
+		return nil, fmt.Errorf("cannot determine configuration search scope")
+
+	}
+	// TODO: same as above, have it automatically set the settings whenever clicked
+	for _, ss := range scp.searchConfSettings.Selected {
+		if ss == searchConfTextSettings[0] {
+			searchSettings.SearchWrappedText = true
+			continue
+		}
+		if ss == searchConfTextSettings[1] {
+			searchSettings.PrintTextMetaInformation = true
+			continue
+		}
+		if ss == searchConfTextSettings[2] {
+			searchSettings.UsePOS = true
+			continue
+		}
+		if ss == searchConfTextSettings[3] {
+			searchSettings.UseFORM = true
+			continue
+		}
+	}
+	return searchSettings, nil
 }
 
 func (scp *scpStruct) getPane() fyne.CanvasObject {
 	return scp.mainContainer
+}
+
+// Disables widgets so nothing can be changed / clicked while search is running
+func (scp *scpStruct) startNewSearch() {
+	scp.searchConfScope.Disable()
+	scp.searchConfCorpusSelection.Disable()
+	scp.searchConfSettings.Disable()
+	scp.toggleMassSearch.Disable()
+	scp.termAdd.Disable()
+	scp.massSearchConfSettings.Disable()
+	scp.searchButtonTerms.Disable()
+	scp.searchButtonMass.Disable()
+}
+
+// Re-enables all widgets
+func (scp *scpStruct) finishSearch() {
+	scp.searchConfScope.Enable()
+	scp.searchConfCorpusSelection.Enable()
+	scp.searchConfSettings.Enable()
+	scp.toggleMassSearch.Enable()
+	scp.termAdd.Enable()
+	scp.massSearchConfSettings.Enable()
+	scp.searchButtonTerms.Enable()
+	scp.searchButtonMass.Enable()
 }

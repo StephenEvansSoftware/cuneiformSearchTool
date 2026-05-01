@@ -133,8 +133,10 @@ func (g *gui) ShowGUI() {
 func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettings, startTime time.Time) {
 	if err := util.ValidateTypes(terms); err != nil {
 		g.searchResultsPane.setResultInfo("Search error:", err.Error())
+		g.searchConfigurationPane.finishSearch()
 		return
 	}
+	// TODO: update and refresh search result pane before search continues
 	g.searchResultsPane.startNewSearch(terms)
 
 	// Run the search
@@ -144,12 +146,14 @@ func (g *gui) startNewSearch(terms [][]string, searchSettings *util.SearchSettin
 	)
 	if err != nil {
 		g.searchResultsPane.setResultInfo("Search error:", err.Error())
+		g.searchConfigurationPane.finishSearch()
 		return
 	}
 
 	searchTime := time.Since(startTime)
 
 	g.searchResultsPane.updateResults(searchResults, totalInstances, searchSettings, startTime, searchTime)
+	g.searchConfigurationPane.finishSearch()
 
 	// TODO: also disable all other widgets associated with search configuration while search is running
 }

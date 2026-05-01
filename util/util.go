@@ -68,6 +68,32 @@ var (
 		"WN",
 	}
 
+	validTypesSansProperNouns = []string{
+		"AJ",
+		"AV",
+		"CNJ",
+		"DET",
+		"DP",
+		"IP",
+		"J",
+		"MOD",
+		"N",
+		"NU",
+		"PP",
+		"PRP",
+		"QP",
+		"REL",
+		"RP",
+		"SBJ",
+		"V",
+		"V/i",
+		"V/t",
+		"X",
+		"XP",
+		"n",
+		"u",
+	}
+
 	inputSources = "./jsonFiles/sources"
 	inputCorpus  = "./jsonFiles/corpus"
 
