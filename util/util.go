@@ -144,6 +144,9 @@ type SearchSettings struct {
 }
 
 type MassSearchSettings struct {
+	// Terms length we want to mass search for
+	TermsLength int
+
 	// Do we want to group proper nouns for this mass search
 	UseProperNounGrouping bool
 
@@ -265,15 +268,20 @@ func ValidateTypes(types [][]string) error {
 	return nil
 }
 
-// Main search functionality
-func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearchResult, int, error) {
+func getCorpusList(allCorpus bool, selectCorpus []string) []string {
 	// When allCorpus is set, change which corpus to search by overriding its value
-	if searchSettings.SearchAllTexts {
-		searchSettings.SelectedCorpus = []string{}
+	if allCorpus {
+		selectCorpus = []string{}
 		for _, corp := range corpusTextInfo {
-			searchSettings.SelectedCorpus = append(searchSettings.SelectedCorpus, corp.CorpusName)
+			selectCorpus = append(selectCorpus, corp.CorpusName)
 		}
 	}
+	return selectCorpus
+}
+
+// Main search functionality
+func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearchResult, int, error) {
+	searchSettings.SelectedCorpus = getCorpusList(searchSettings.SearchAllTexts, searchSettings.SelectedCorpus)
 
 	if len(searchSettings.SelectedCorpus) == 0 {
 		// No corpus' selected, return error
@@ -292,12 +300,16 @@ func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearc
 				// Range over each text within the corpus
 				for _, textInfo := range corpTextInfo.Texts {
 					// TODO TODO TODO: add text deliniation here
-					textFile, err := readFile(textInfo.TextPath)
+					textBytes, err := readFile(textInfo.TextPath)
+					if err != nil {
+						return nil, -1, err
+					}
+					text, err := marshalToText(textBytes)
 					if err != nil {
 						return nil, -1, err
 					}
 					// Perform the actual search
-					searchResult, err := searchText(textFile, terms, searchSettings)
+					searchResult, err := searchText(text, terms, searchSettings)
 					if err != nil {
 						return nil, -1, err
 					}
@@ -332,19 +344,21 @@ func checkExists(path string) (isDir, isFile bool, err error) {
 	return false, false, err
 }
 
-func readFile(path string) (*text.Text, error) {
+func readFile(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 	fileBytes, _ := ioutil.ReadAll(file)
+	return fileBytes, nil
+}
 
+func marshalToText(bytes []byte) (*text.Text, error) {
 	var text text.Text
-	if err := json.Unmarshal(fileBytes, &text); err != nil {
+	if err := json.Unmarshal(bytes, &text); err != nil {
 		return nil, err
 	}
-
 	return &text, nil
 }
 
@@ -491,7 +505,11 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 }
 
 func GetPrintableText(textPath string, printSettings *PrintSettings) (string, error) {
-	text, err := readFile(textPath)
+	textBytes, err := readFile(textPath)
+	if err != nil {
+		return "", err
+	}
+	text, err := marshalToText(textBytes)
 	if err != nil {
 		return "", err
 	}
@@ -582,47 +600,4 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string 
 	}
 
 	return fmt.Sprintf("%s\nEnd of text", textReturn)
-}
-
-func GetTotalMassSearches(termsLength int, properNounGrouping bool) int {
-	baseN := totalTermsWithoutProperNounGrouping
-	if properNounGrouping {
-		baseN = totalTermsWithProperNounGrouping
-	}
-	// Avoiding importing the maths package to do a simple pow
-	output := baseN
-	for i := 1; i < termsLength; i++ {
-		output *= baseN
-	}
-	return output
-}
-
-func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearchSettings) {
-	/*
-		TODO: a lot...
-		1. using the settings, create a hash
-		2. check if a file exists with that hash included in its name
-		3. load file
-		4. check if file contains the settings as they are in the current search
-			4a. yes: we have found our previous attempt at searching
-					count the number of entries
-			4b. no: we create the file with our hash and search and mass search settings
-		5. compute all possible permutations of the types depending on settings
-			note: this will be n^r
-				n = total types being used (all Valid types or validSansProperNouns + 1)
-				r = term length
-			5a. skip the first X terms where X is the number of current entires (if applicable)
-		6. start the search
-			6a. each successful search we append to file
-				ordering of corpus results is alphabitical
-				format:
-							c1	c2	c3
-					[a,a,a]	x	y	z
-					[a,a,b]	x2	y2	z2
-				will use csv to represent, so ends up looking like
-
-					,c1,c2,c3
-					"[a,a,a]",x,y,z
-					"[a,a,b]",x2,y2,z2
-	*/
 }

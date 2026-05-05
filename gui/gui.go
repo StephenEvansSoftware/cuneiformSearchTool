@@ -161,4 +161,5 @@ func (g *gui) startNewTermsSearch(terms [][]string, searchSettings *util.SearchS
 
 func (g *gui) startNewMassSearch(searchSettings *util.SearchSettings, massSearchSettings *util.MassSearchSettings, startTime time.Time) {
 	util.RunMassSearch(searchSettings, massSearchSettings)
+	g.searchConfigurationPane.finishSearch()
 }

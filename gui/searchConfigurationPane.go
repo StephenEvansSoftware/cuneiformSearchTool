@@ -414,7 +414,9 @@ func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 }
 
 func (scp *scpStruct) getMassSearchSettings() (*util.MassSearchSettings, error) {
+	massSearchTermsLength, _ := strconv.Atoi(scp.massSearchConfTermLengthSelection.Selected)
 	massSearchSettings := &util.MassSearchSettings{
+		TermsLength:           massSearchTermsLength,
 		UseProperNounGrouping: scp.massSearchConfSettingProperNounGrouping.Checked,
 		LimitSearchScope:      scp.massSearchConfSettingLimitSearchScope.Checked,
 		ManualTermSelection:   scp.massSearchConfSettingManualTermSelection.Checked,
