@@ -46,6 +46,9 @@ cuneiformSearchTool*
 # Input files
 jsonFiles/*
 
+# Output files
+massSearchOutputs/*
+
 # Miscellaneous files
 *.swp
 todo

@@ -320,12 +320,13 @@ func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearc
 						totalInstancesFound += len(searchResult.Results)
 					}
 				}
-				if len(textSearchResults) != 0 {
-					corpusSearchResults = append(corpusSearchResults, &CorpusSearchResult{
-						CorpusName:  corp,
-						TextResults: textSearchResults,
-					})
-				}
+				// TODO: make this a setting to hide empty results or not
+				// if len(textSearchResults) != 0 {
+				corpusSearchResults = append(corpusSearchResults, &CorpusSearchResult{
+					CorpusName:  corp,
+					TextResults: textSearchResults,
+				})
+				// }
 			}
 		}
 	}
