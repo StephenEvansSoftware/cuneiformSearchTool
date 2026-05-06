@@ -163,7 +163,7 @@ func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, to
 			corpusAcc.Append(resultAccItem)
 
 			resultsList.OnSelected = func(liID widget.ListItemID) {
-				printableText, err := util.GetPrintableText(
+				printableText, _, err := util.GetPrintableText(
 					tr.TextPath,
 					&util.PrintSettings{ // TODO: change once print settings are easier handled
 						PrintTextMetaInformation: searchSettings.PrintTextMetaInformation,

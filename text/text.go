@@ -37,7 +37,7 @@ type CdlLevelFour struct {
 	Type          string `json:"type,omitempty"`
 
 	F     *FTop           `json:"f,omitempty"`
-	Cdl   []*CdlLevelFour `json:"cdl,omitempty"` // TODO: not sure if this will work
+	Cdl   []*CdlLevelFour `json:"cdl,omitempty"`
 }
 
 type FTop struct {

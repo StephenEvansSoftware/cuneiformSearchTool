@@ -62,7 +62,7 @@ func (cpp *cpStruct) setupCorpus() {
 		corpusTextList.OnSelected = func(liID widget.ListItemID) {
 			// TODO TODO TODO: this is still messy as hell, refactor
 			// TODO TODO TODO: change once print settings are setable in menu
-			printableText, err := util.GetPrintableText(corpusText.Texts[liID].TextPath, &util.PrintSettings{PrintTextMetaInformation: true})
+			printableText, _, err := util.GetPrintableText(corpusText.Texts[liID].TextPath, &util.PrintSettings{PrintTextMetaInformation: true})
 			if err != nil {
 				panic(err.Error()) // TODO TODO TODO: 100% change this
 			}

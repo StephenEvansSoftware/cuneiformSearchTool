@@ -1,7 +1,11 @@
 package gui
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
+
+	"cuneiformSearchTool/util"
 )
 
 const (
@@ -57,8 +61,52 @@ func newMainMenu(gui guiInternal) mainMenu {
 }
 
 func (mm *mmStruct) setupOptionsMenu() {
+	// TODO: quick hacky way to print out the corpus meta info, fix
+	optionsPrintMetaInfo := fyne.NewMenuItem("Print Corpus Meta Info", func() {
+		corpusOrder := []string{}
+		corpusMetaInfo := map[string]*util.CorpusMetaInfo{}
+		for _, ci := range util.ListCorpusAndTexts() {
+			corpusOrder = append(corpusOrder, ci.CorpusName)
+			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName)
+			if err != nil {
+				panic(err.Error()) // TODO: handle better
+			}
+			corpusMetaInfo[ci.CorpusName] = cmi
+		}
+
+		for _, co := range corpusOrder {
+			fmt.Printf(",%s", co)
+		}
+		fmt.Printf("\nNumberOfTexts")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%d", corpusMetaInfo[co].NumberOfTexts)
+		}
+		fmt.Printf("\nTotalFragsInAllTexts")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%d", corpusMetaInfo[co].TotalFragsInAllTexts)
+		}
+		fmt.Printf("\nTotalFragsInAllTextsWithoutX")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%d", corpusMetaInfo[co].TotalFragsInAllTextsWithoutX)
+		}
+		fmt.Printf("\nTotalLinesInAllTexts")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%d", corpusMetaInfo[co].TotalLinesInAllTexts)
+		}
+		fmt.Printf("\nAverageLineLength")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%.2f", corpusMetaInfo[co].AverageLineLength)
+		}
+		fmt.Printf("\nAverageLineLengthWithoutBlanks")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%.2f", corpusMetaInfo[co].AverageLineLengthWithoutBlanks)
+		}
+		fmt.Println()
+	})
+
 	mm.optionsMenu = fyne.NewMenu(
 		menuTextOptions,
+		optionsPrintMetaInfo,
 	)
 }
 

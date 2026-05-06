@@ -52,3 +52,4 @@ massSearchOutputs/*
 # Miscellaneous files
 *.swp
 todo
+*.csv*

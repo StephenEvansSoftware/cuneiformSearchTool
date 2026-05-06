@@ -168,6 +168,16 @@ type PrintSettings struct {
 	UseFORM                  bool
 }
 
+type CorpusMetaInfo struct {
+	NumberOfTexts                  int
+	TotalFragsInAllTexts           int
+	TotalFragsInAllTextsWithoutX   int
+	FragCounts                     map[string]int
+	TotalLinesInAllTexts           int
+	AverageLineLength              float32
+	AverageLineLengthWithoutBlanks float32
+}
+
 // Package intiialisation
 func init() {
 	if err := loadCorpusTexts(); err != nil {
@@ -505,19 +515,20 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 	return foundPatterns, nil
 }
 
-func GetPrintableText(textPath string, printSettings *PrintSettings) (string, error) {
+func GetPrintableText(textPath string, printSettings *PrintSettings) (string, *text.TextMetaInfo, error) {
 	textBytes, err := readFile(textPath)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	text, err := marshalToText(textBytes)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return getPrintableText(text, printSettings), nil
+	printText, textMetaInfo := getPrintableText(text, printSettings)
+	return printText, textMetaInfo, nil
 }
 
-func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string {
+func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string, *text.TextMetaInfo) {
 	textReturn := fmt.Sprintf("Start of text: %+v\n", textBody.TextId)
 	numLines := 1
 
@@ -568,10 +579,10 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string 
 
 	// TODO TODO TODO: the returned text is being used as markdown, so there are issues with escape characters and such
 	if printSettings.PrintTextMetaInformation {
-		metaInf.TotalLines = numLines
-		metaInf.LineLengthAverage = float32(metaInf.TotalFrags) / float32(numLines)
+		metaInf.TotalLines = numLines - 1
+		metaInf.LineLengthAverage = float32(metaInf.TotalFrags) / float32(numLines-1)
 		metaInf.TotalFragsWithoutBlanks = metaInf.TotalFrags - metaInf.FragCounts[""]
-		metaInf.LineLengthAverageWithoutBlanks = float32(metaInf.TotalFragsWithoutBlanks) / float32(numLines)
+		metaInf.LineLengthAverageWithoutBlanks = float32(metaInf.TotalFragsWithoutBlanks) / float32(numLines-1)
 
 		metaInfo := fmt.Sprintf("Meta information on text: %s\n\n"+
 			"\tTotalFrags: %d\n"+
@@ -600,5 +611,34 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) string 
 		textReturn = fmt.Sprintf("%s\n---\n%s", metaInfo, textReturn)
 	}
 
-	return fmt.Sprintf("%s\nEnd of text", textReturn)
+	return fmt.Sprintf("%s\nEnd of text", textReturn), metaInf
+}
+
+func GetCorpusMetaInfo(corpus string) (*CorpusMetaInfo, error) {
+	for _, c := range corpusTextInfo {
+		if c.CorpusName == corpus {
+			cmi := &CorpusMetaInfo{FragCounts: map[string]int{}}
+			cmi.NumberOfTexts = len(c.Texts)
+			printTextSettings := &PrintSettings{PrintTextMetaInformation: true}
+			for _, t := range c.Texts {
+				_, tmi, err := GetPrintableText(t.TextPath, printTextSettings)
+				if err != nil {
+					panic(err.Error()) // TODO: handle better
+				}
+				cmi.TotalFragsInAllTexts += tmi.TotalFrags
+				cmi.TotalFragsInAllTextsWithoutX += tmi.TotalFragsWithoutBlanks
+				cmi.TotalLinesInAllTexts += tmi.TotalLines
+
+				for s, i := range tmi.FragCounts {
+					cmi.FragCounts[s] += i
+				}
+			}
+
+			cmi.AverageLineLength = float32(cmi.TotalFragsInAllTexts) / float32(cmi.TotalLinesInAllTexts)
+			cmi.AverageLineLengthWithoutBlanks = float32(cmi.TotalFragsInAllTextsWithoutX) / float32(cmi.TotalLinesInAllTexts)
+
+			return cmi, nil
+		}
+	}
+	return nil, fmt.Errorf("corpus '%s' not found", corpus)
 }
