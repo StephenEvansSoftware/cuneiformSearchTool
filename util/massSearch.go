@@ -30,51 +30,25 @@ func GetTotalMassSearches(termsLength int, properNounGrouping bool) int {
 	return powInt(baseN, termsLength)
 }
 
+/*
+Gathers settings and creates a hash
+Creates the file with that hash if it doesn't already exist
+Loads the file and checks the settings match
+Ensures the corpus selection matches
+Creates all possible permutations of valid types
+Iterates through the file checking which permutations have been finished
+Continues searching with the remaining permutations
+*/
 func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearchSettings) {
-	/*
-				TODO: a lot...
-		1. using the settings, create a hash
-		2. check if a file exists with that hash included in its name
-		3. load file
-		4. check if file contains the settings as they are in the current search
-		4a. yes: we have found our previous attempt at searching
-			count the number of entries
-		4b. no: we create the file with our hash and search and mass search settings
-		5. compute all possible permutations of the types depending on settings
-			note: this will be n^r
-				n = total types being used (all Valid types or validSansProperNouns + 1)
-				r = term length
-		5a. skip the first X terms where X is the number of current entires (if applicable)
-				6. start the search
-					6a. each successful search we append to file
-						ordering of corpus results is alphabitical
-						format:
-									c1	c2	c3
-							[a,a,a]	x	y	z
-							[a,a,b]	x2	y2	z2
-						will use csv to represent, so ends up looking like
-
-							,c1,c2,c3
-							"[a,a,a]",x,y,z
-							"[a,a,b]",x2,y2,z2
-	*/
-
-	/*
-		1. create hash of settings
-			settings will be simple strings of things that ARE set
-	*/
 	// Gather settings and get first 8 characters of the hash of the set
 	settings := getMassSearchSettingStrings(searchSettings, massSearchSettings)
 	sortedSettings := strings.Join(settings, "\n")
 	settingsHash := hash([]byte(sortedSettings))[:8]
 
-	fmt.Printf("---Settings hash = %s\n", settingsHash)
-
 	// Check if file exists already
 	fileName := fmt.Sprintf("%s%s%s", massSearchFileNamePrefix, settingsHash, massSearchFileType)
 	filePath := fmt.Sprintf("%s/%s", massSearchOutputFolder, fileName)
 	isDir, isFile, err := checkExists(filePath)
-	fmt.Printf("---File: %s\n", filePath)
 	if err != nil {
 		panic(err) // TODO: handle better
 	}
@@ -82,7 +56,6 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 		panic(fmt.Errorf("%s is a directory, not a file", filePath)) // TODO: handle better
 	}
 	if !isFile {
-		fmt.Println("---File does not exist, creating now...")
 		// No file found, create it now
 		corpusLine := fmt.Sprintf(",%s", strings.Join(getCorpusList(searchSettings.SearchAllTexts, searchSettings.SelectedCorpus), ","))
 		toWrite := fmt.Sprintf("%s\n\n%s", sortedSettings, corpusLine)
@@ -90,21 +63,14 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 		if err != nil {
 			panic(err) // TODO: handle better
 		}
-		fmt.Println("---File created.")
-	} else {
-		fmt.Println("---File exists, moving on.")
 	}
 
-	fmt.Println("---Opening file...")
-
 	// Load file
-	//	file, err := os.Open(filePath)
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_RDWR, 0666) // TODO TODO TODO
 	if err != nil {
 		panic(err) // TODO: handle better
 	}
 	defer file.Close()
-	fmt.Println("---File opened. Scanning file...")
 	fileScanner := bufio.NewScanner(file)
 	// Ensure settings listed in the file are the same
 	for _, s := range settings {
@@ -166,14 +132,12 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 		for j := 0; j < massSearchSettings.TermsLength; j++ {
 			terms = append(terms, []string{searchTerms[permutationIndexes[i][j]]})
 		}
-		fmt.Printf("Running search: %v...\n", terms)
 		newSearchResultLine := fmt.Sprintf("\n%v", terms)
 		// Actual search happening here
 		csr, _, err := SearchFor(terms, searchSettings)
 		if err != nil {
 			panic(err.Error()) // TODO: handle better
 		}
-		fmt.Println("Search finished, writing results...")
 		// Create the new line in the search results file
 		for _, c := range csr {
 			totalCorpusResults := 0
@@ -187,21 +151,7 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 		if err != nil {
 			panic(err.Error()) // TODO: handle better
 		}
-		fmt.Println("Results written.")
 	}
-
-	/*
-		file format:
-
-		Ordered
-		ListOf
-		Settings
-					< newline break between settings and data
-		,c1,c2,c3
-		[a a a],12,99,41
-		[a a b],82,14,55
-	*/
-
 }
 
 func getMassSearchSettingStrings(ss *SearchSettings, mss *MassSearchSettings) []string {
