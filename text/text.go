@@ -12,13 +12,13 @@ type TextMetaInfo struct {
 }
 
 type Text struct {
-	TextId     string `json:"textid,omitempty"`
+	TextId string `json:"textid,omitempty"`
 
 	Cdl []*CdlLevelOne `json:"cdl,omitempty"`
 }
 
 type CdlLevelOne struct {
-	Cdl      []*CdlLevelTwo `json:"cdl,omitempty"`
+	Cdl []*CdlLevelTwo `json:"cdl,omitempty"`
 }
 
 type CdlLevelTwo struct {
@@ -32,16 +32,17 @@ type CdlLevelThree struct {
 }
 
 type CdlLevelFour struct {
-	Frag          string `json:"frag,omitempty"`
-	Label         string `json:"label,omitempty"`
-	Type          string `json:"type,omitempty"`
+	Frag  string `json:"frag,omitempty"`
+	Label string `json:"label,omitempty"`
+	Type  string `json:"type,omitempty"`
 
-	F     *FTop           `json:"f,omitempty"`
-	Cdl   []*CdlLevelFour `json:"cdl,omitempty"`
+	F   *FTop           `json:"f,omitempty"`
+	Cdl []*CdlLevelFour `json:"cdl,omitempty"`
 }
 
 type FTop struct {
-	Epos     string `json:"epos,omitempty"`
-	Form     string `json:"form,omitempty"`
-	Pos      string `json:"pos,omitempty"`
+	Cf   string `json:"cf,omitempty"`
+	Epos string `json:"epos,omitempty"`
+	Form string `json:"form,omitempty"`
+	Pos  string `json:"pos,omitempty"`
 }

@@ -94,7 +94,6 @@ var (
 		"u",
 	}
 
-	inputSources = "./jsonFiles/sources"
 	inputCorpus  = "./jsonFiles/corpus"
 
 	corpusTextInfo = []*CorpusInfo{}
