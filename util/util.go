@@ -94,7 +94,7 @@ var (
 		"u",
 	}
 
-	inputCorpus  = "./jsonFiles/corpus"
+	inputCorpus = "./jsonFiles/corpus"
 
 	corpusTextInfo = []*CorpusInfo{}
 
@@ -175,6 +175,7 @@ type CorpusMetaInfo struct {
 	TotalLinesInAllTexts           int
 	AverageLineLength              float32
 	AverageLineLengthWithoutBlanks float32
+	CfCounts                       map[string]int
 }
 
 // Package intiialisation
@@ -533,6 +534,7 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 
 	metaInf := &text.TextMetaInfo{
 		FragCounts: map[string]int{},
+		CfCounts:   map[string]int{},
 	}
 
 	for _, cdlOne := range textBody.Cdl {
@@ -561,6 +563,7 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 									} else {
 										metaInf.FragCounts[cdl4.F.Epos] += 1
 									}
+									metaInf.CfCounts[cdl4.F.Cf] += 1
 								}
 								if cdl4.Cdl != nil {
 									for _, cdlFive := range cdl4.Cdl {
@@ -606,6 +609,15 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 			for _, fcs := range fragCountSlice {
 				metaInfo = fmt.Sprintf("%s%s", metaInfo, fcs)
 			}
+			metaInfo = fmt.Sprintf("%s%s", metaInfo, "\tCfCounts:\n")
+			cfCountSlice := []string{}
+			for s, i := range metaInf.CfCounts {
+				cfCountSlice = append(cfCountSlice, fmt.Sprintf("\t\t%s\t%d\n", s, i))
+			}
+			slices.Sort(cfCountSlice)
+			for _, cfs := range cfCountSlice {
+				metaInfo = fmt.Sprintf("%s%s", metaInfo, cfs)
+			}
 		}
 		textReturn = fmt.Sprintf("%s\n---\n%s", metaInfo, textReturn)
 	}
@@ -630,6 +642,9 @@ func GetCorpusMetaInfo(corpus string) (*CorpusMetaInfo, error) {
 
 				for s, i := range tmi.FragCounts {
 					cmi.FragCounts[s] += i
+				}
+				for s, i := range tmi.CfCounts {
+					cmi.CfCounts[s] += i
 				}
 			}
 
