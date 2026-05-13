@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"slices"
 
 	"fyne.io/fyne/v2"
 
@@ -104,9 +105,41 @@ func (mm *mmStruct) setupOptionsMenu() {
 		fmt.Println()
 	})
 
+	// TODO: another quick hacky way to get the data fast, fix later
+	optionsPrintMetaInfoCf := fyne.NewMenuItem("Print Corpus CF Info", func() {
+		corpusOrder := []string{}
+		corpusMetaInfo := map[string]*util.CorpusMetaInfo{}
+		for _, ci := range util.ListCorpusAndTexts() {
+			corpusOrder = append(corpusOrder, ci.CorpusName)
+			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName)
+			if err != nil {
+				panic(err.Error()) // TODO: handle better
+			}
+			corpusMetaInfo[ci.CorpusName] = cmi
+		}
+		cfOrder := []string{}
+		for _, co := range corpusOrder {
+			fmt.Printf(",%s", co)
+			for key := range corpusMetaInfo[co].CfCounts {
+				cfOrder = append(cfOrder, key)
+			}
+		}
+		slices.Sort(cfOrder)
+		cfOrder = slices.Compact(cfOrder)
+
+		for _, cf := range cfOrder {
+			fmt.Printf("\n%s", cf)
+			for _, co := range corpusOrder {
+				fmt.Printf(",%d", corpusMetaInfo[co].CfCounts[cf])
+			}
+		}
+		fmt.Println()
+	})
+
 	mm.optionsMenu = fyne.NewMenu(
 		menuTextOptions,
 		optionsPrintMetaInfo,
+		optionsPrintMetaInfoCf,
 	)
 }
 

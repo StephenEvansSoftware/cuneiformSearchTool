@@ -628,7 +628,10 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 func GetCorpusMetaInfo(corpus string) (*CorpusMetaInfo, error) {
 	for _, c := range corpusTextInfo {
 		if c.CorpusName == corpus {
-			cmi := &CorpusMetaInfo{FragCounts: map[string]int{}}
+			cmi := &CorpusMetaInfo{
+				FragCounts: map[string]int{},
+				CfCounts:   map[string]int{},
+			}
 			cmi.NumberOfTexts = len(c.Texts)
 			printTextSettings := &PrintSettings{PrintTextMetaInformation: true}
 			for _, t := range c.Texts {
