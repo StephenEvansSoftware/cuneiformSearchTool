@@ -10,6 +10,7 @@ type TextMetaInfo struct {
 	LineLengthAverage              float32
 	LineLengthAverageWithoutBlanks float32
 	CfCounts                       map[string]int
+	CfTypes                        map[string][]string
 }
 
 type Text struct {

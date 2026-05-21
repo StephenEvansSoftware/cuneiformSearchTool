@@ -68,7 +68,7 @@ func (mm *mmStruct) setupOptionsMenu() {
 		corpusMetaInfo := map[string]*util.CorpusMetaInfo{}
 		for _, ci := range util.ListCorpusAndTexts() {
 			corpusOrder = append(corpusOrder, ci.CorpusName)
-			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName)
+			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName, false, false)
 			if err != nil {
 				panic(err.Error()) // TODO: handle better
 			}
@@ -111,7 +111,7 @@ func (mm *mmStruct) setupOptionsMenu() {
 		corpusMetaInfo := map[string]*util.CorpusMetaInfo{}
 		for _, ci := range util.ListCorpusAndTexts() {
 			corpusOrder = append(corpusOrder, ci.CorpusName)
-			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName)
+			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName, false, false)
 			if err != nil {
 				panic(err.Error()) // TODO: handle better
 			}
@@ -136,10 +136,90 @@ func (mm *mmStruct) setupOptionsMenu() {
 		fmt.Println()
 	})
 
+	// TODO: same again, just getting data quickly in a gross way
+	optionsPrintMetaInfoCfSansPN := fyne.NewMenuItem("Print Corpus CF Info Sans PN", func() {
+		corpusOrder := []string{}
+		corpusMetaInfo := map[string]*util.CorpusMetaInfo{}
+		for _, ci := range util.ListCorpusAndTexts() {
+			corpusOrder = append(corpusOrder, ci.CorpusName)
+			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName, true, false)
+			if err != nil {
+				panic(err.Error()) // TODO: handle better
+			}
+			corpusMetaInfo[ci.CorpusName] = cmi
+		}
+		cfOrder := []string{}
+		for _, co := range corpusOrder {
+			fmt.Printf(",%s", co)
+			for key := range corpusMetaInfo[co].CfCounts {
+				cfOrder = append(cfOrder, key)
+			}
+		}
+		slices.Sort(cfOrder)
+		cfOrder = slices.Compact(cfOrder)
+
+		for _, cf := range cfOrder {
+			fmt.Printf("\n%s", cf)
+			for _, co := range corpusOrder {
+				fmt.Printf(",%d", corpusMetaInfo[co].CfCounts[cf])
+			}
+		}
+		fmt.Println()
+	})
+
+	// TODO: same again, just getting data quickly in a gross way
+	optionsPrintMetaInfoCfSansPNWithType := fyne.NewMenuItem("Print Corpus CF Info Sans PN With Type", func() {
+		corpusOrder := []string{}
+		corpusMetaInfo := map[string]*util.CorpusMetaInfo{}
+		cfTypes := map[string][]string{}
+		for _, ci := range util.ListCorpusAndTexts() {
+			corpusOrder = append(corpusOrder, ci.CorpusName)
+			cmi, err := util.GetCorpusMetaInfo(ci.CorpusName, true, true)
+			if err != nil {
+				panic(err.Error()) // TODO: handle better
+			}
+			corpusMetaInfo[ci.CorpusName] = cmi
+			for sk, sv := range cmi.CfTypes {
+				cfTypes[sk] = append(cfTypes[sk], sv...)
+			}
+		}
+		cfOrder := []string{}
+		fmt.Printf(",Type")
+		for _, co := range corpusOrder {
+			fmt.Printf(",%s", co)
+			for key := range corpusMetaInfo[co].CfCounts {
+				cfOrder = append(cfOrder, key)
+			}
+		}
+		slices.Sort(cfOrder)
+		cfOrder = slices.Compact(cfOrder)
+
+		for _, cf := range cfOrder {
+			slices.Sort(cfTypes[cf])
+			typeCounts := map[string]int{}
+			for _, s := range cfTypes[cf] {
+				typeCounts[s] += 1
+			}
+			cfTypes[cf] = slices.Compact(cfTypes[cf])
+			cfTypeCountString := "["
+			for _, cft := range cfTypes[cf] {
+				cfTypeCountString = fmt.Sprintf("%s %s:%d", cfTypeCountString, cft, typeCounts[cft])
+			}
+			cfTypeCountString = cfTypeCountString+" ]"
+			fmt.Printf("\n%s,%s", cf, cfTypeCountString)
+			for _, co := range corpusOrder {
+				fmt.Printf(",%d", corpusMetaInfo[co].CfCounts[cf])
+			}
+		}
+		fmt.Println()
+	})
+
 	mm.optionsMenu = fyne.NewMenu(
 		menuTextOptions,
 		optionsPrintMetaInfo,
 		optionsPrintMetaInfoCf,
+		optionsPrintMetaInfoCfSansPN,
+		optionsPrintMetaInfoCfSansPNWithType,
 	)
 }
 

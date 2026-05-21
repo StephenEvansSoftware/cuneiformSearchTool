@@ -165,6 +165,9 @@ type PrintSettings struct {
 	PrintTextMetaInformation bool
 	UsePOS                   bool
 	UseFORM                  bool
+
+	SkipPN   bool // TODO: hack to get data quickly
+	AddTypes bool // TODO: same
 }
 
 type CorpusMetaInfo struct {
@@ -176,6 +179,7 @@ type CorpusMetaInfo struct {
 	AverageLineLength              float32
 	AverageLineLengthWithoutBlanks float32
 	CfCounts                       map[string]int
+	CfTypes                        map[string][]string
 }
 
 // Package intiialisation
@@ -535,6 +539,7 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 	metaInf := &text.TextMetaInfo{
 		FragCounts: map[string]int{},
 		CfCounts:   map[string]int{},
+		CfTypes:    map[string][]string{},
 	}
 
 	for _, cdlOne := range textBody.Cdl {
@@ -558,12 +563,30 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 										textReturn = fmt.Sprintf("%s%s ", textReturn, cdl4.Frag)
 									}
 									metaInf.TotalFrags += 1
+									currPosEpos := ""
 									if printSettings.UsePOS {
 										metaInf.FragCounts[cdl4.F.Pos] += 1
+										currPosEpos = cdl4.F.Pos
 									} else {
 										metaInf.FragCounts[cdl4.F.Epos] += 1
+										currPosEpos = cdl4.F.Epos
 									}
-									metaInf.CfCounts[cdl4.F.Cf] += 1
+									if printSettings.SkipPN {
+										skipAdd := false
+										for _, pn := range properNounTypes {
+											if pn == currPosEpos {
+												skipAdd = true
+												break
+											}
+										}
+										if !skipAdd {
+											metaInf.CfCounts[cdl4.F.Cf] += 1
+											metaInf.CfTypes[cdl4.F.Cf] = append(metaInf.CfTypes[cdl4.F.Cf], currPosEpos)
+										}
+									} else {
+										metaInf.CfCounts[cdl4.F.Cf] += 1
+										metaInf.CfTypes[cdl4.F.Cf] = append(metaInf.CfTypes[cdl4.F.Cf], currPosEpos)
+									}
 								}
 								if cdl4.Cdl != nil {
 									for _, cdlFive := range cdl4.Cdl {
@@ -625,15 +648,20 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 	return fmt.Sprintf("%s\nEnd of text", textReturn), metaInf
 }
 
-func GetCorpusMetaInfo(corpus string) (*CorpusMetaInfo, error) {
+func GetCorpusMetaInfo(corpus string, skipPN bool, addTypes bool) (*CorpusMetaInfo, error) {
 	for _, c := range corpusTextInfo {
 		if c.CorpusName == corpus {
 			cmi := &CorpusMetaInfo{
 				FragCounts: map[string]int{},
 				CfCounts:   map[string]int{},
+				CfTypes:    map[string][]string{},
 			}
 			cmi.NumberOfTexts = len(c.Texts)
-			printTextSettings := &PrintSettings{PrintTextMetaInformation: true}
+			printTextSettings := &PrintSettings{
+				PrintTextMetaInformation: true,
+				SkipPN:                   skipPN,
+				AddTypes:                 addTypes,
+			}
 			for _, t := range c.Texts {
 				_, tmi, err := GetPrintableText(t.TextPath, printTextSettings)
 				if err != nil {
@@ -648,6 +676,9 @@ func GetCorpusMetaInfo(corpus string) (*CorpusMetaInfo, error) {
 				}
 				for s, i := range tmi.CfCounts {
 					cmi.CfCounts[s] += i
+				}
+				for sk, sv := range tmi.CfTypes {
+					cmi.CfTypes[sk] = append(cmi.CfTypes[sk], sv...)
 				}
 			}
 
