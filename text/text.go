@@ -2,17 +2,6 @@ package text
 
 // TODO: rename some of these structs
 
-type TextMetaInfo struct {
-	TotalFrags                     int
-	TotalFragsWithoutBlanks        int
-	FragCounts                     map[string]int
-	TotalLines                     int
-	LineLengthAverage              float32
-	LineLengthAverageWithoutBlanks float32
-	CfCounts                       map[string]int
-	CfTypes                        map[string][]string
-}
-
 type Text struct {
 	TextId string `json:"textid,omitempty"`
 

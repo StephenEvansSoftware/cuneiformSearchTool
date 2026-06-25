@@ -24,9 +24,11 @@ type cpStruct struct {
 	corpusAccordion *widget.Accordion
 
 	textDisplay textDisplayPane
+
+	gui guiInternal
 }
 
-func newCorpusPane() corpusPane {
+func newCorpusPane(gui guiInternal) corpusPane {
 	cpp := &cpStruct{}
 
 	cpp.setupCorpus()
@@ -36,6 +38,8 @@ func newCorpusPane() corpusPane {
 		cpp.corpus,
 		cpp.textDisplay.getPane(),
 	)
+
+	cpp.gui = gui
 
 	return cpp
 }
@@ -62,12 +66,17 @@ func (cpp *cpStruct) setupCorpus() {
 		corpusTextList.OnSelected = func(liID widget.ListItemID) {
 			// TODO TODO TODO: this is still messy as hell, refactor
 			// TODO TODO TODO: change once print settings are setable in menu
-			printableText, _, err := util.GetPrintableText(corpusText.Texts[liID].TextPath, &util.PrintSettings{PrintTextMetaInformation: true})
+			printSettings := cpp.gui.getPrintSettings()
+			printableText, err := util.GetPrintableText(corpusText.Texts[liID].TextPath, printSettings)
 			if err != nil {
 				panic(err.Error()) // TODO TODO TODO: 100% change this
 			}
 			cpp.textDisplay.SetTitle(corpusText.Texts[liID].TextName)
-			cpp.textDisplay.ParseMarkdown([]string{printableText})
+			display := []string{printableText.Sprint()}
+			if printSettings.PrintTextMetaInformation {
+				display = append([]string{printableText.MetaInformation.Sprint()}, display...)
+			}
+			cpp.textDisplay.ParseMarkdown(display)
 		}
 
 		// Create custom sized container for the list to avoid fyne imposing MinSize and making it unusable

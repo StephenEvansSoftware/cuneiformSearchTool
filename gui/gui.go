@@ -40,6 +40,7 @@ type guiInternal interface {
 	startNewMassSearch(*util.SearchSettings, *util.MassSearchSettings, time.Time)
 	setViewSearch()
 	toggleCorpusPane()
+	getPrintSettings() *util.PrintSettings
 }
 
 type gui struct {
@@ -89,12 +90,12 @@ func (g *gui) createMainMenu() {
 
 func (g *gui) createViewPanes() {
 	// Generic panes used in multiple views
-	g.corpusPane = newCorpusPane()
+	g.corpusPane = newCorpusPane(g)
 	g.corpusView = true
 
 	// Search panes
 	g.searchConfigurationPane = newSearchConfigurationPane(g)
-	g.searchResultsPane = newSearchResultsPane()
+	g.searchResultsPane = newSearchResultsPane(g)
 	g.searchView = container.NewHSplit(
 		container.NewVSplit(
 			g.searchConfigurationPane.getPane(),
@@ -120,6 +121,10 @@ func (g *gui) toggleCorpusPane() {
 	} else {
 		g.corpusPane.getPane().Hide()
 	}
+}
+
+func (g *gui) getPrintSettings() *util.PrintSettings {
+	return g.mainMenu.getPrintSettings()
 }
 
 func (g *gui) SetMainWindow() {

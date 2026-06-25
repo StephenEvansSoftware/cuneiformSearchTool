@@ -12,6 +12,13 @@ import (
 const (
 	menuTextOptions = "Options"
 
+	menuTextPrintSettings             = "Print Settings"
+	menuItemTextPrintSettingsMetaInfo = "      Meta Information"
+	menuItemTextPrintSettingsUsePos   = "      Use POS over EPOS"
+	menuItemTextPrintSettingsPosEpos  = "      Show POS / EPOS"
+	menuItemTextPrintSettingsForm     = "      Form over frag"
+	menuItemTextPrintSettingsCf       = "      Cf"
+
 	menuTextResults                  = "Results"
 	menuItemTextResultsSaveSearch    = "Save search"
 	menuItemTextResultsLoadSearch    = "Load search"
@@ -24,6 +31,7 @@ const (
 
 type mainMenu interface {
 	getMainMenu() *fyne.MainMenu
+	getPrintSettings() *util.PrintSettings
 }
 
 type mmStruct struct {
@@ -31,6 +39,13 @@ type mmStruct struct {
 
 	// Menus
 	optionsMenu *fyne.Menu
+
+	printOptionsMenu     *fyne.Menu
+	printOptionsMetaInfo *fyne.MenuItem
+	printOptionsUsePos   *fyne.MenuItem
+	printOptionsPosEpos  *fyne.MenuItem
+	printOptionsForm     *fyne.MenuItem
+	printOptionsCf       *fyne.MenuItem
 
 	viewMenu   *fyne.Menu
 	viewSearch *fyne.MenuItem
@@ -49,11 +64,13 @@ func newMainMenu(gui guiInternal) mainMenu {
 	mm := &mmStruct{gui: gui}
 
 	mm.setupOptionsMenu()
+	mm.setupPrintSettingsMenu()
 	mm.setupViewMenu()
 	mm.setupResultsMenu()
 
 	mm.mainMenu = fyne.NewMainMenu(
 		mm.optionsMenu,
+		mm.printOptionsMenu,
 		mm.viewMenu,
 		mm.resultsMenu,
 	)
@@ -205,7 +222,7 @@ func (mm *mmStruct) setupOptionsMenu() {
 			for _, cft := range cfTypes[cf] {
 				cfTypeCountString = fmt.Sprintf("%s %s:%d", cfTypeCountString, cft, typeCounts[cft])
 			}
-			cfTypeCountString = cfTypeCountString+" ]"
+			cfTypeCountString = cfTypeCountString + " ]"
 			fmt.Printf("\n%s,%s", cf, cfTypeCountString)
 			for _, co := range corpusOrder {
 				fmt.Printf(",%d", corpusMetaInfo[co].CfCounts[cf])
@@ -220,6 +237,33 @@ func (mm *mmStruct) setupOptionsMenu() {
 		optionsPrintMetaInfoCf,
 		optionsPrintMetaInfoCfSansPN,
 		optionsPrintMetaInfoCfSansPNWithType,
+	)
+}
+
+func (mm *mmStruct) setupPrintSettingsMenu() {
+	mm.printOptionsMetaInfo = fyne.NewMenuItem(menuItemTextPrintSettingsMetaInfo, func() {
+		mm.printOptionsMetaInfo.Checked = !mm.printOptionsMetaInfo.Checked
+	})
+	mm.printOptionsUsePos = fyne.NewMenuItem(menuItemTextPrintSettingsUsePos, func() {
+		mm.printOptionsUsePos.Checked = !mm.printOptionsUsePos.Checked
+	})
+	mm.printOptionsPosEpos = fyne.NewMenuItem(menuItemTextPrintSettingsPosEpos, func() {
+		mm.printOptionsPosEpos.Checked = !mm.printOptionsPosEpos.Checked
+	})
+	mm.printOptionsForm = fyne.NewMenuItem(menuItemTextPrintSettingsForm, func() {
+		mm.printOptionsForm.Checked = !mm.printOptionsForm.Checked
+	})
+	mm.printOptionsCf = fyne.NewMenuItem(menuItemTextPrintSettingsCf, func() {
+		mm.printOptionsCf.Checked = !mm.printOptionsCf.Checked
+	})
+
+	mm.printOptionsMenu = fyne.NewMenu(
+		menuTextPrintSettings,
+		mm.printOptionsMetaInfo,
+		mm.printOptionsUsePos,
+		mm.printOptionsPosEpos,
+		mm.printOptionsForm,
+		mm.printOptionsCf,
 	)
 }
 
@@ -250,4 +294,14 @@ func (mm *mmStruct) setupResultsMenu() {
 
 func (mm *mmStruct) getMainMenu() *fyne.MainMenu {
 	return mm.mainMenu
+}
+
+func (mm *mmStruct) getPrintSettings() *util.PrintSettings {
+	return &util.PrintSettings{
+		PrintTextMetaInformation: mm.printOptionsMetaInfo.Checked,
+		UsePos:                   mm.printOptionsUsePos.Checked,
+		PrintPosEpos:             mm.printOptionsPosEpos.Checked,
+		PrintForm:                mm.printOptionsForm.Checked,
+		PrintCf:                  mm.printOptionsCf.Checked,
+	}
 }

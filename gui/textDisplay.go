@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -68,13 +70,13 @@ func (tdp *tdpStruct) ParseMarkdown(content []string) {
 		return
 	}
 	// Parse the first line
-	tdp.richTextBox.ParseMarkdown(content[0])
+	tdp.richTextBox.ParseMarkdown(strings.ReplaceAll(strings.ReplaceAll(content[0], "\t", richTextTab), "\n", "\n\n"))
 	// Append all others
 	tdp.AppendMarkdown(content[1:])
 }
 
 func (tdp *tdpStruct) AppendMarkdown(content []string) {
 	for _, line := range content {
-		tdp.richTextBox.AppendMarkdown(line)
+		tdp.richTextBox.AppendMarkdown(strings.ReplaceAll(strings.ReplaceAll(line, "\t", richTextTab), "\n", "\n\n"))
 	}
 }

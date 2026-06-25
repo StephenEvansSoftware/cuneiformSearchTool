@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"slices"
 
 	"cuneiformSearchTool/text"
 )
@@ -136,10 +135,11 @@ type SearchSettings struct {
 	SearchAllTexts bool
 	SelectedCorpus []string
 
-	SearchWrappedText        bool
-	PrintTextMetaInformation bool
-	UsePOS                   bool
-	UseFORM                  bool
+	SearchWrappedText bool
+	UsePOS            bool
+	UseFORM           bool
+
+	TermsLength int
 }
 
 type MassSearchSettings struct {
@@ -163,8 +163,10 @@ type MassSearchSettings struct {
 
 type PrintSettings struct {
 	PrintTextMetaInformation bool
-	UsePOS                   bool
-	UseFORM                  bool
+	UsePos                   bool
+	PrintPosEpos             bool
+	PrintForm                bool
+	PrintCf                  bool
 
 	SkipPN   bool // TODO: hack to get data quickly
 	AddTypes bool // TODO: same
@@ -519,28 +521,29 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 	return foundPatterns, nil
 }
 
-func GetPrintableText(textPath string, printSettings *PrintSettings) (string, *text.TextMetaInfo, error) {
+func GetPrintableText(textPath string, printSettings *PrintSettings) (*text.PrintableText, error) {
 	textBytes, err := readFile(textPath)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	text, err := marshalToText(textBytes)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	printText, textMetaInfo := getPrintableText(text, printSettings)
-	return printText, textMetaInfo, nil
+	return getPrintableText(text, printSettings), nil
 }
 
-func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string, *text.TextMetaInfo) {
-	textReturn := fmt.Sprintf("Start of text: %+v\n", textBody.TextId)
-	numLines := 1
-
-	metaInf := &text.TextMetaInfo{
-		FragCounts: map[string]int{},
-		CfCounts:   map[string]int{},
-		CfTypes:    map[string][]string{},
+func getPrintableText(textBody *text.Text, printSettings *PrintSettings) *text.PrintableText {
+	pt := &text.PrintableText{
+		TextId: textBody.TextId,
+		MetaInformation: &text.TextMetaInfo{
+			FragCounts: map[string]int{},
+			CfCounts:   map[string]int{},
+			CfTypes:    map[string][]string{},
+		},
+		Lines: []*text.Line{},
 	}
+	numLines := 1
 
 	for _, cdlOne := range textBody.Cdl {
 		for _, cdlTwo := range cdlOne.Cdl {
@@ -548,29 +551,45 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 				// Here we have the actual body of the text
 				for _, cdlThree := range cdlTwo.Cdl {
 					if len(cdlThree.Cdl) != 0 {
+						currLine := &text.Line{
+							Number: -1,
+						}
 						for _, cdlFour := range cdlThree.Cdl {
 							var cdlChecker func(cdl4 *text.CdlLevelFour)
 							cdlChecker = func(cdl4 *text.CdlLevelFour) {
 								if cdl4.Type == "line-start" {
-									textReturn = fmt.Sprintf("%s\n\t%d: %s\n\t\t", textReturn, numLines, cdl4.Label)
+									if currLine.Number > 0 {
+										pt.Lines = append(pt.Lines, currLine)
+									}
+									currLine = &text.Line{
+										Number: numLines,
+										Label:  cdl4.Label,
+										Frags:  [][3]string{},
+									}
 									numLines += 1
 								}
 								if cdl4.F != nil {
 									// This is the actual element in the text we care about
-									if printSettings.UseFORM {
-										textReturn = fmt.Sprintf("%s%s ", textReturn, cdl4.F.Form)
+									// The three pieces of information for each frag/form are:
+									//	1: The actual frag / form
+									//	2: Pos / Epos
+									//	3: Cf
+									currElement := [3]string{}
+									if printSettings.PrintForm {
+										currElement[0] = cdl4.F.Form
 									} else {
-										textReturn = fmt.Sprintf("%s%s ", textReturn, cdl4.Frag)
+										currElement[0] = cdl4.Frag
 									}
-									metaInf.TotalFrags += 1
+									pt.MetaInformation.TotalFrags += 1
 									currPosEpos := ""
-									if printSettings.UsePOS {
-										metaInf.FragCounts[cdl4.F.Pos] += 1
+									if printSettings.UsePos {
+										pt.MetaInformation.FragCounts[cdl4.F.Pos] += 1
 										currPosEpos = cdl4.F.Pos
 									} else {
-										metaInf.FragCounts[cdl4.F.Epos] += 1
+										pt.MetaInformation.FragCounts[cdl4.F.Epos] += 1
 										currPosEpos = cdl4.F.Epos
 									}
+									currElement[1] = currPosEpos
 									if printSettings.SkipPN {
 										skipAdd := false
 										for _, pn := range properNounTypes {
@@ -580,13 +599,15 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 											}
 										}
 										if !skipAdd {
-											metaInf.CfCounts[cdl4.F.Cf] += 1
-											metaInf.CfTypes[cdl4.F.Cf] = append(metaInf.CfTypes[cdl4.F.Cf], currPosEpos)
+											pt.MetaInformation.CfCounts[cdl4.F.Cf] += 1
+											pt.MetaInformation.CfTypes[cdl4.F.Cf] = append(pt.MetaInformation.CfTypes[cdl4.F.Cf], currPosEpos)
 										}
 									} else {
-										metaInf.CfCounts[cdl4.F.Cf] += 1
-										metaInf.CfTypes[cdl4.F.Cf] = append(metaInf.CfTypes[cdl4.F.Cf], currPosEpos)
+										pt.MetaInformation.CfCounts[cdl4.F.Cf] += 1
+										pt.MetaInformation.CfTypes[cdl4.F.Cf] = append(pt.MetaInformation.CfTypes[cdl4.F.Cf], currPosEpos)
 									}
+									currElement[2] = cdl4.F.Cf
+									currLine.Frags = append(currLine.Frags, currElement)
 								}
 								if cdl4.Cdl != nil {
 									for _, cdlFive := range cdl4.Cdl {
@@ -596,56 +617,22 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) (string
 							}
 							cdlChecker(cdlFour)
 						}
+						if currLine.Number > 0 {
+							pt.Lines = append(pt.Lines, currLine)
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// TODO TODO TODO: the returned text is being used as markdown, so there are issues with escape characters and such
-	if printSettings.PrintTextMetaInformation {
-		metaInf.TotalLines = numLines - 1
-		metaInf.LineLengthAverage = float32(metaInf.TotalFrags) / float32(numLines-1)
-		metaInf.TotalFragsWithoutBlanks = metaInf.TotalFrags - metaInf.FragCounts[""]
-		metaInf.LineLengthAverageWithoutBlanks = float32(metaInf.TotalFragsWithoutBlanks) / float32(numLines-1)
+	// Compute meta information
+	pt.MetaInformation.TotalLines = numLines - 1
+	pt.MetaInformation.LineLengthAverage = float32(pt.MetaInformation.TotalFrags) / float32(numLines-1)
+	pt.MetaInformation.TotalFragsWithoutBlanks = pt.MetaInformation.TotalFrags - pt.MetaInformation.FragCounts[""]
+	pt.MetaInformation.LineLengthAverageWithoutBlanks = float32(pt.MetaInformation.TotalFragsWithoutBlanks) / float32(numLines-1)
 
-		metaInfo := fmt.Sprintf("Meta information on text: %s\n\n"+
-			"\tTotalFrags: %d\n"+
-			"\tWithout Xs: %d\n"+
-			"\tTotalLines: %d\n"+
-			"\tLineLengthAverage: %.2f\n"+
-			"\tAverageWithout Xs: %.2f\n",
-			textBody.TextId,
-			metaInf.TotalFrags,
-			metaInf.TotalFragsWithoutBlanks,
-			metaInf.TotalLines,
-			metaInf.LineLengthAverage,
-			metaInf.LineLengthAverageWithoutBlanks,
-		)
-		if metaInf.TotalFrags != 0 {
-			metaInfo = fmt.Sprintf("%s%s", metaInfo, "\tFragCounts:\n")
-			fragCountSlice := []string{}
-			for s, i := range metaInf.FragCounts {
-				fragCountSlice = append(fragCountSlice, fmt.Sprintf("\t\t%s\t%d\n", s, i))
-			}
-			slices.Sort(fragCountSlice)
-			for _, fcs := range fragCountSlice {
-				metaInfo = fmt.Sprintf("%s%s", metaInfo, fcs)
-			}
-			metaInfo = fmt.Sprintf("%s%s", metaInfo, "\tCfCounts:\n")
-			cfCountSlice := []string{}
-			for s, i := range metaInf.CfCounts {
-				cfCountSlice = append(cfCountSlice, fmt.Sprintf("\t\t%s\t%d\n", s, i))
-			}
-			slices.Sort(cfCountSlice)
-			for _, cfs := range cfCountSlice {
-				metaInfo = fmt.Sprintf("%s%s", metaInfo, cfs)
-			}
-		}
-		textReturn = fmt.Sprintf("%s\n---\n%s", metaInfo, textReturn)
-	}
-
-	return fmt.Sprintf("%s\nEnd of text", textReturn), metaInf
+	return pt
 }
 
 func GetCorpusMetaInfo(corpus string, skipPN bool, addTypes bool) (*CorpusMetaInfo, error) {
@@ -663,21 +650,21 @@ func GetCorpusMetaInfo(corpus string, skipPN bool, addTypes bool) (*CorpusMetaIn
 				AddTypes:                 addTypes,
 			}
 			for _, t := range c.Texts {
-				_, tmi, err := GetPrintableText(t.TextPath, printTextSettings)
+				pt, err := GetPrintableText(t.TextPath, printTextSettings)
 				if err != nil {
 					panic(err.Error()) // TODO: handle better
 				}
-				cmi.TotalFragsInAllTexts += tmi.TotalFrags
-				cmi.TotalFragsInAllTextsWithoutX += tmi.TotalFragsWithoutBlanks
-				cmi.TotalLinesInAllTexts += tmi.TotalLines
+				cmi.TotalFragsInAllTexts += pt.MetaInformation.TotalFrags
+				cmi.TotalFragsInAllTextsWithoutX += pt.MetaInformation.TotalFragsWithoutBlanks
+				cmi.TotalLinesInAllTexts += pt.MetaInformation.TotalLines
 
-				for s, i := range tmi.FragCounts {
+				for s, i := range pt.MetaInformation.FragCounts {
 					cmi.FragCounts[s] += i
 				}
-				for s, i := range tmi.CfCounts {
+				for s, i := range pt.MetaInformation.CfCounts {
 					cmi.CfCounts[s] += i
 				}
-				for sk, sv := range tmi.CfTypes {
+				for sk, sv := range pt.MetaInformation.CfTypes {
 					cmi.CfTypes[sk] = append(cmi.CfTypes[sk], sv...)
 				}
 			}

@@ -47,9 +47,12 @@ type srpStruct struct {
 
 	// Text display container
 	textDisplay textDisplayPane
+
+	// Reference to gui to ask for print settings
+	gui guiInternal
 }
 
-func newSearchResultsPane() searchResultsPane {
+func newSearchResultsPane(gui guiInternal) searchResultsPane {
 	srPane := &srpStruct{}
 
 	// Setup main pane components
@@ -61,6 +64,7 @@ func newSearchResultsPane() searchResultsPane {
 		srPane.results,
 		container.NewScroll(srPane.textDisplay.getPane()),
 	)
+	srPane.gui = gui
 	return srPane
 }
 
@@ -163,19 +167,21 @@ func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, to
 			corpusAcc.Append(resultAccItem)
 
 			resultsList.OnSelected = func(liID widget.ListItemID) {
-				printableText, _, err := util.GetPrintableText(
+				printSettings := srp.gui.getPrintSettings()
+				printSettings.UsePos = searchSettings.UsePOS
+				printableText, err := util.GetPrintableText(
 					tr.TextPath,
-					&util.PrintSettings{ // TODO: change once print settings are easier handled
-						PrintTextMetaInformation: searchSettings.PrintTextMetaInformation,
-						UsePOS:                   searchSettings.UsePOS,
-						UseFORM:                  searchSettings.UseFORM,
-					},
+					printSettings,
 				)
 				if err != nil {
 					panic(err.Error()) // TODO TODO TODO: handle this better, just panic to know it's occured for now (if it ever does)
 				}
 				srp.textDisplay.SetTitle(tr.TextName)
-				srp.textDisplay.ParseMarkdown([]string{printableText})
+				display := []string{printableText.Highlight(tr.Results[liID].OverallLineIndex, tr.Results[liID].Position, searchSettings.TermsLength)}
+				if printSettings.PrintTextMetaInformation {
+					display = append([]string{printableText.MetaInformation.Sprint()}, display...)
+				}
+				srp.textDisplay.ParseMarkdown(display)
 			}
 		}
 		corpusAccItem := widget.NewAccordionItem(fmt.Sprintf("%s: %d", cr.CorpusName, len(cr.TextResults)), corpusAcc)

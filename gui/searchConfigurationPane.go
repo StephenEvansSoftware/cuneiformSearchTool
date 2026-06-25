@@ -37,7 +37,6 @@ var (
 
 	searchConfTextSettings = []string{
 		"Wrap line text during search",
-		"Print text meta information",
 		"Use POS instead of EPOS",
 		"Use FORM instead of FRAG",
 	}
@@ -213,7 +212,7 @@ func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
 			// Check if this is the last type in this search term
 			if len(searchTypes.Objects) == 1 {
 				// Check if this is the last remaining term in the search
-				if len(scp.terms.Objects) == 1 {
+				if len(scp.termSelection.Objects) == 1 {
 					// If so, do not remove this type and move on
 					// TODO: show an error at this point, or maybe disable the removal if only one type in one term
 					return
@@ -224,7 +223,7 @@ func (scp *scpStruct) createNewSearchTerm() *fyne.Container {
 			// Check if this was the last type removed from the term
 			if len(searchTypes.Objects) == 0 {
 				// If so, remove this term
-				scp.terms.Remove(encapsulatedTerm)
+				scp.termSelection.Remove(encapsulatedTerm)
 			}
 		})
 		newType.Add(removeType)
@@ -310,6 +309,7 @@ func (scp *scpStruct) setupSearchTermsButton() {
 		if err != nil {
 			panic(err) // TODO: handle better
 		}
+		searchSettings.TermsLength = len(collectedSearchTerms)
 
 		// TODO: this isn't quite right, but it'll do for now
 		scp.startNewSearch()
@@ -398,14 +398,10 @@ func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 			continue
 		}
 		if ss == searchConfTextSettings[1] {
-			searchSettings.PrintTextMetaInformation = true
-			continue
-		}
-		if ss == searchConfTextSettings[2] {
 			searchSettings.UsePOS = true
 			continue
 		}
-		if ss == searchConfTextSettings[3] {
+		if ss == searchConfTextSettings[2] {
 			searchSettings.UseFORM = true
 			continue
 		}
