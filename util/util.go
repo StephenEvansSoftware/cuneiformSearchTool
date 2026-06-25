@@ -138,6 +138,7 @@ type SearchSettings struct {
 	SearchWrappedText bool
 	UsePOS            bool
 	UseFORM           bool
+	IgnoreOverlap     bool
 
 	TermsLength int
 }
@@ -501,6 +502,11 @@ func searchText(textBody *text.Text, searchPattern [][]string, searchSettings *S
 										foundPatterns.Results = append(foundPatterns.Results, newResult)
 										// Reset last index in case the pattern was found
 										previouslyFoundPatternPart[spLen-1] = false
+
+										// Clear search buffer if we don't want overlapping terms
+										if searchSettings.IgnoreOverlap {
+											previouslyFoundPatternPart = make([]bool, spLen)
+										}
 									}
 								}
 								if cdl4.Cdl != nil {

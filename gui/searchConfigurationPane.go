@@ -39,6 +39,7 @@ var (
 		"Wrap line text during search",
 		"Use POS instead of EPOS",
 		"Use FORM instead of FRAG",
+		"Ignore overlapping terms",
 	}
 
 	massSearchConfTextSettings = []string{
@@ -403,6 +404,10 @@ func (scp *scpStruct) getSearchSettings() (*util.SearchSettings, error) {
 		}
 		if ss == searchConfTextSettings[2] {
 			searchSettings.UseFORM = true
+			continue
+		}
+		if ss == searchConfTextSettings[3] {
+			searchSettings.IgnoreOverlap = true
 			continue
 		}
 	}
