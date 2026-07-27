@@ -81,22 +81,30 @@ func (pt *PrintableText) Sprint() string {
 
 // Note: highlights backwards
 func (pt *PrintableText) Highlight(lineNumber int, fragIndex int, length int) string {
-	//fmt.Println(pt.Lines[lineNumber-1].Frags[fragIndex-1])
-
-	/*
-		start one line X position Y
-		go backwards on line X until we're done or hit position 0
-		go backwards on line X-1 until we're done or hit position 0
-	*/
+	startLine := lineNumber -1
+	startIndex := fragIndex - length
+	for startIndex < 0 {
+		startLine -= 1
+		startIndex = len(pt.Lines[startLine].Frags) + startIndex
+	}
+	highlightEnabled := false
+	toHighlight := length
 
 	textReturn := fmt.Sprintf("Start of text: %s\n", pt.TextId)
 	for ln, line := range pt.Lines {
-		//textReturn = fmt.Sprintf("%s\n\t%d: %s\n\t\t", textReturn, line.Number, line.Label)
 		textReturn = fmt.Sprintf("%s\n\t%d: %s\n\t\t", textReturn, line.Number, line.Label)
 		for fn, f := range line.Frags {
-			textReturn = fmt.Sprintf("%s*%s* ", textReturn, f[0])
-			if ln == lineNumber-1 && fn == fragIndex-1 {
-				//				textReturn = fmt.Sprintf("***%s***", textReturn)
+			if ln == startLine && fn == startIndex {
+				highlightEnabled = true
+			}
+			if highlightEnabled {
+				textReturn = fmt.Sprintf("%s**%s** ", textReturn, f[0])
+				toHighlight -= 1
+				if toHighlight == 0 {
+					highlightEnabled = false
+				}
+			} else {
+				textReturn = fmt.Sprintf("%s%s ", textReturn, f[0])
 			}
 		}
 	}
