@@ -91,7 +91,9 @@ func (g *gui) createMainMenu() {
 func (g *gui) createViewPanes() {
 	// Generic panes used in multiple views
 	g.corpusPane = newCorpusPane(g)
+	// Disable corpus view by default to save ui space
 	g.corpusView = true
+	g.toggleCorpusPane()
 
 	// Search panes
 	g.searchConfigurationPane = newSearchConfigurationPane(g)

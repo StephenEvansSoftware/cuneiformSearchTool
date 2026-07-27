@@ -139,14 +139,16 @@ func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, to
 				func() fyne.CanvasObject { return widget.NewLabel("tmp") },
 				func(liID widget.ListItemID, co fyne.CanvasObject) {
 					// TODO: this result display is messy, fix
-					co.(*widget.Label).SetText(fmt.Sprintf(
-						//"Line:%d, Label:%s, Position:%d, Last Entry: %s",
-						"%d : %s : %d : %s",
-						tr.Results[liID].OverallLineIndex,
-						tr.Results[liID].Label,
-						tr.Results[liID].Position,
-						tr.Results[liID].LastEntry,
-					))
+					fyne.Do(func() {
+						co.(*widget.Label).SetText(fmt.Sprintf(
+							//"Line:%d, Label:%s, Position:%d, Last Entry: %s",
+							"%d : %s : %d : %s",
+							tr.Results[liID].OverallLineIndex,
+							tr.Results[liID].Label,
+							tr.Results[liID].Position,
+							tr.Results[liID].LastEntry,
+						))
+					})
 				},
 			)
 
