@@ -550,6 +550,9 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) *text.P
 		Lines: []*text.Line{},
 	}
 	numLines := 1
+	currLine := &text.Line{
+		Number: -1,
+	}
 
 	for _, cdlOne := range textBody.Cdl {
 		for _, cdlTwo := range cdlOne.Cdl {
@@ -557,9 +560,6 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) *text.P
 				// Here we have the actual body of the text
 				for _, cdlThree := range cdlTwo.Cdl {
 					if len(cdlThree.Cdl) != 0 {
-						currLine := &text.Line{
-							Number: -1,
-						}
 						for _, cdlFour := range cdlThree.Cdl {
 							var cdlChecker func(cdl4 *text.CdlLevelFour)
 							cdlChecker = func(cdl4 *text.CdlLevelFour) {
@@ -622,9 +622,6 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) *text.P
 								}
 							}
 							cdlChecker(cdlFour)
-						}
-						if currLine.Number > 0 {
-							pt.Lines = append(pt.Lines, currLine)
 						}
 					}
 				}
