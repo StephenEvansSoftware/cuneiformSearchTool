@@ -182,6 +182,8 @@ func (srp *srpStruct) updateResults(searchResults []*util.CorpusSearchResult, to
 					display = append([]string{printableText.MetaInformation.Sprint()}, display...)
 				}
 				srp.textDisplay.ParseMarkdown(display)
+				resultsList.UnselectAll()
+				resultsList.Highlight(liID)
 			}
 		}
 		corpusAccItem := widget.NewAccordionItem(fmt.Sprintf("%s: %d", cr.CorpusName, len(cr.TextResults)), corpusAcc)

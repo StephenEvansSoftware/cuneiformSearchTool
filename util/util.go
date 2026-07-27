@@ -638,6 +638,9 @@ func getPrintableText(textBody *text.Text, printSettings *PrintSettings) *text.P
 	pt.MetaInformation.TotalFragsWithoutBlanks = pt.MetaInformation.TotalFrags - pt.MetaInformation.FragCounts[""]
 	pt.MetaInformation.LineLengthAverageWithoutBlanks = float32(pt.MetaInformation.TotalFragsWithoutBlanks) / float32(numLines-1)
 
+	pt.PrintPosEpos = printSettings.PrintPosEpos
+	pt.PrintCf = printSettings.PrintCf
+
 	return pt
 }
 

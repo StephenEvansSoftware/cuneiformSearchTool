@@ -21,6 +21,9 @@ type PrintableText struct {
 	Lines  []*Line
 
 	MetaInformation *TextMetaInfo
+
+	PrintPosEpos bool
+	PrintCf      bool
 }
 
 type Line struct {
@@ -68,20 +71,12 @@ func (tmi *TextMetaInfo) Sprint() string {
 }
 
 func (pt *PrintableText) Sprint() string {
-	textReturn := fmt.Sprintf("Start of text: %s", pt.TextId)
-	for _, line := range pt.Lines {
-		textReturn = fmt.Sprintf("%s\n\t%d: %s\n\t\t", textReturn, line.Number, line.Label)
-		for _, f := range line.Frags {
-			textReturn = fmt.Sprintf("%s%s ", textReturn, f[0])
-		}
-	}
-	textReturn = fmt.Sprintf("%s\nEnd of text", textReturn)
-	return textReturn
+	return pt.Highlight(-1, -1, -1)
 }
 
 // Note: highlights backwards
 func (pt *PrintableText) Highlight(lineNumber int, fragIndex int, length int) string {
-	startLine := lineNumber -1
+	startLine := lineNumber - 1
 	startIndex := fragIndex - length
 	for startIndex < 0 {
 		startLine -= 1
