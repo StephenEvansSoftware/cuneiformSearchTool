@@ -95,7 +95,7 @@ func (pt *PrintableText) Highlight(lineNumber int, fragIndex int, length int) st
 			if highlightEnabled {
 				textReturn = fmt.Sprintf("%s**%s** ", textReturn, f[0])
 				toHighlight -= 1
-				if toHighlight == 0 {
+				if toHighlight <= 0 {
 					highlightEnabled = false
 				}
 			} else {

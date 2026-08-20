@@ -19,11 +19,6 @@ const (
 	menuItemTextPrintSettingsForm     = "      Form over frag"
 	menuItemTextPrintSettingsCf       = "      Cf"
 
-	menuTextResults                  = "Results"
-	menuItemTextResultsSaveSearch    = "Save search"
-	menuItemTextResultsLoadSearch    = "Load search"
-	menuItemTextResultsExportResults = "Export results"
-
 	menuTextView           = "View"
 	menuItemTextViewSearch = "Search"
 	menuItemTextViewCorpus = "Corpus"
@@ -51,11 +46,6 @@ type mmStruct struct {
 	viewSearch *fyne.MenuItem
 	viewCorpus *fyne.MenuItem
 
-	resultsMenu   *fyne.Menu
-	resultsSave   *fyne.MenuItem
-	resultsLoad   *fyne.MenuItem
-	resultsExport *fyne.MenuItem
-
 	// Reference to parent to pass information back and forth
 	gui guiInternal
 }
@@ -66,13 +56,11 @@ func newMainMenu(gui guiInternal) mainMenu {
 	mm.setupOptionsMenu()
 	mm.setupPrintSettingsMenu()
 	mm.setupViewMenu()
-	mm.setupResultsMenu()
 
 	mm.mainMenu = fyne.NewMainMenu(
 		mm.optionsMenu,
 		mm.printOptionsMenu,
 		mm.viewMenu,
-		mm.resultsMenu,
 	)
 
 	return mm
@@ -276,19 +264,6 @@ func (mm *mmStruct) setupViewMenu() {
 		menuTextView,
 		mm.viewSearch,
 		mm.viewCorpus,
-	)
-}
-
-func (mm *mmStruct) setupResultsMenu() {
-	mm.resultsSave = fyne.NewMenuItem(menuItemTextResultsSaveSearch, func() {})
-	mm.resultsLoad = fyne.NewMenuItem(menuItemTextResultsLoadSearch, func() {})
-	mm.resultsExport = fyne.NewMenuItem(menuItemTextResultsExportResults, func() {})
-
-	mm.resultsMenu = fyne.NewMenu(
-		menuTextResults,
-		mm.resultsSave,
-		mm.resultsLoad,
-		mm.resultsExport,
 	)
 }
 

@@ -6,7 +6,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
 
 	"cuneiformSearchTool/util"
 )
@@ -36,7 +35,6 @@ type GUI interface {
 
 // Keeps inner workings of the gui private but allows passing of information from pane to pane
 type guiInternal interface {
-	startNewTermsSearch([][]string, *util.SearchSettings, time.Time)
 	startNewMassSearch(*util.SearchSettings, *util.MassSearchSettings, time.Time)
 	setViewSearch()
 	toggleCorpusPane()
@@ -50,10 +48,8 @@ type gui struct {
 	// Main menu
 	mainMenu mainMenu
 
-	// Search view panes
-	searchView              fyne.CanvasObject
-	searchConfigurationPane searchConfigurationPane
-	searchResultsPane       searchResultsPane
+	// Search view pane
+	searchView fyne.CanvasObject
 
 	// Generic panes used across multiple views
 	corpusPane corpusPane
@@ -95,20 +91,11 @@ func (g *gui) createViewPanes() {
 	g.corpusView = true
 	g.toggleCorpusPane()
 
-	// Search panes
-	g.searchConfigurationPane = newSearchConfigurationPane(g)
-	g.searchResultsPane = newSearchResultsPane(g)
-	g.searchView = container.NewHSplit(
-		container.NewVSplit(
-			g.searchConfigurationPane.getPane(),
-			g.searchResultsPane.getPane(),
-		),
-		g.corpusPane.getPane(),
-	)
+	// Setup default search view
+	g.searchView = newSearchView(g)
 }
 
 func (g *gui) setViewDefault() {
-	// Default view is just the search view
 	g.setViewSearch()
 }
 
@@ -137,36 +124,6 @@ func (g *gui) ShowGUI() {
 	g.mainWindow.ShowAndRun()
 }
 
-// Run a new search with the given search terms
-func (g *gui) startNewTermsSearch(terms [][]string, searchSettings *util.SearchSettings, startTime time.Time) {
-	if err := util.ValidateTypes(terms); err != nil {
-		g.searchResultsPane.setResultInfo("Search error:", err.Error())
-		g.searchConfigurationPane.finishSearch()
-		return
-	}
-	// TODO: update and refresh search result pane before search continues
-	g.searchResultsPane.startNewSearch(terms)
-
-	// Run the search
-	searchResults, totalInstances, err := util.SearchFor(
-		terms,
-		searchSettings,
-	)
-	if err != nil {
-		g.searchResultsPane.setResultInfo("Search error:", err.Error())
-		g.searchConfigurationPane.finishSearch()
-		return
-	}
-
-	searchTime := time.Since(startTime)
-
-	g.searchResultsPane.updateResults(searchResults, totalInstances, searchSettings, startTime, searchTime)
-	g.searchConfigurationPane.finishSearch()
-
-	// TODO: also disable all other widgets associated with search configuration while search is running
-}
-
 func (g *gui) startNewMassSearch(searchSettings *util.SearchSettings, massSearchSettings *util.MassSearchSettings, startTime time.Time) {
 	util.RunMassSearch(searchSettings, massSearchSettings)
-	g.searchConfigurationPane.finishSearch()
 }

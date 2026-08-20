@@ -57,7 +57,7 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 	}
 	if !isFile {
 		// No file found, create it now
-		corpusLine := fmt.Sprintf(",%s", strings.Join(getCorpusList(searchSettings.SearchAllTexts, searchSettings.SelectedCorpus), ","))
+		corpusLine := fmt.Sprintf(",%s", strings.Join(getCorpusList(searchSettings.SearchAllCorpuses, searchSettings.SelectedCorpus), ","))
 		toWrite := fmt.Sprintf("%s\n\n%s", sortedSettings, corpusLine)
 		err = os.WriteFile(filePath, []byte(toWrite), 0755)
 		if err != nil {
@@ -88,7 +88,7 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 	// Last check to make sure that the first line is the corpus list
 	// TODO: probably don't need to do this at this point. once settings are fine assume data is too
 	fileScanner.Scan()
-	if corpusLine := fileScanner.Text(); corpusLine != fmt.Sprintf(",%s", strings.Join(getCorpusList(searchSettings.SearchAllTexts, searchSettings.SelectedCorpus), ",")) {
+	if corpusLine := fileScanner.Text(); corpusLine != fmt.Sprintf(",%s", strings.Join(getCorpusList(searchSettings.SearchAllCorpuses, searchSettings.SelectedCorpus), ",")) {
 		panic(fmt.Errorf("unknown corpus line: %s", corpusLine))
 	}
 
@@ -157,7 +157,7 @@ func RunMassSearch(searchSettings *SearchSettings, massSearchSettings *MassSearc
 func getMassSearchSettingStrings(ss *SearchSettings, mss *MassSearchSettings) []string {
 	// Save settings as string that we can sort and hash later
 	settings := []string{fmt.Sprintf("TermsLength: %d", mss.TermsLength)}
-	if ss.SearchAllTexts {
+	if ss.SearchAllCorpuses {
 		settings = append(settings, "ScopeAllCorpus")
 	} else {
 		selectedCorpus := []string{}

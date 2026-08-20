@@ -132,13 +132,16 @@ type TextInfo struct {
 
 // TODO TODO TODO: change this a LOT
 type SearchSettings struct {
-	SearchAllTexts bool
-	SelectedCorpus []string
+	SearchAllCorpuses bool
+	SelectedCorpus    []string
+
+	SearchAllTexts bool     // TODO
+	SelectedTexts  []string // TODO
 
 	SearchWrappedText bool
+	IgnoreOverlap     bool
 	UsePOS            bool
 	UseFORM           bool
-	IgnoreOverlap     bool
 
 	TermsLength int
 }
@@ -298,7 +301,7 @@ func getCorpusList(allCorpus bool, selectCorpus []string) []string {
 
 // Main search functionality
 func SearchFor(terms [][]string, searchSettings *SearchSettings) ([]*CorpusSearchResult, int, error) {
-	searchSettings.SelectedCorpus = getCorpusList(searchSettings.SearchAllTexts, searchSettings.SelectedCorpus)
+	searchSettings.SelectedCorpus = getCorpusList(searchSettings.SearchAllCorpuses, searchSettings.SelectedCorpus)
 
 	if len(searchSettings.SelectedCorpus) == 0 {
 		// No corpus' selected, return error
