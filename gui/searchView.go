@@ -2,23 +2,16 @@ package gui
 
 import (
 	"fyne.io/fyne/v2"
-	//"fyne.io/fyne/v2/driver/desktop"
-	//	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	//"fmt"
-	//"time"
-	//"cuneiformSearchTool/util"
 )
 
 const (
 	tabItemNewSearchLabel = "New Search"
 )
 
-type searchView interface {
-	// startNewTermsSearch([][]string, *util.SearchSettings, time.Time)
-}
+type searchView interface{}
 
 type svStruct struct {
 	sidebar                   *fyne.Container // TODO TODO TODO: make this into a widget.Toolbar
@@ -48,30 +41,7 @@ func newSearchView(gui guiInternal) fyne.CanvasObject {
 	)
 }
 
-/*
-	type testButton struct {
-		widget.Button
-		helpText string
-	}
-
-	func (tb *testButton) MouseMoved(me *desktop.MouseEvent) {
-		fmt.Println("mouse moved")
-		fmt.Println(tb.helpText)
-		fmt.Println(me.AbsolutePosition)
-		fmt.Println(me.Position)
-	}
-*/
-
 func (sv *svStruct) setupSidebar() {
-
-	/*
-		tb := &testButton{helpText: "help text here"}
-		tb.Icon = theme.ContentAddIcon()
-		tb.ExtendBaseWidget(tb)
-	*/
-	//	sv.sidebarButtonAddNewSearch = tb
-	//sv.sidebarButtonAddNewSearch.Icon = theme.ContentAddIcon()
-
 	sv.sidebarButtonAddNewSearch = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {})
 	sv.sidebarButtonRemoveSearch = widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {})
 	sv.sidebarButtonSaveSearches = widget.NewButtonWithIcon("", theme.DocumentSaveIcon(), func() {})
@@ -102,27 +72,13 @@ func (sv *svStruct) setupSearchPane() {
 	}
 
 	sv.searchPane.SetTabLocation(container.TabLocationLeading)
-
-	/*
-		sv.searchPane.CloseIntercept = func(ti *container.TabItem) {
-			sv.searchPane.Append(sv.createNewSearchTab())
-			fyne.Do(func() {
-				sv.searchPane.Refresh()
-			})
-		}
-	*/
 }
 
 func (sv *svStruct) createNewSearchTab() *container.TabItem {
-	/*
-		srd := createNewSearchResultDisplay()
-		sr := createNewSearchResults(srd)
-		scp := newSearchConfPane(sr)
-	*/
 	sr := newSearchResultsPane(sv.gui)
 	scp := newSearchConfPane(sr)
 
-	return container.NewTabItem(
+	searchTab := container.NewTabItem(
 		tabItemNewSearchLabel,
 		container.NewBorder(
 			nil, nil,
@@ -133,10 +89,7 @@ func (sv *svStruct) createNewSearchTab() *container.TabItem {
 			sr.getPane(),
 		),
 	)
-}
+	sr.setParentTab(searchTab)
 
-/*
-func (sv *svStruct) startNewTermsSearch([][]string, *util.SearchSettings, time.Time) {
-	fmt.Println("sv terms search")
+	return searchTab
 }
-*/

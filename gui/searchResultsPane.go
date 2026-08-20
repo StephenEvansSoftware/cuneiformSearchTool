@@ -21,6 +21,7 @@ const (
 type searchResultsPane interface {
 	paneGetter
 
+	setParentTab(*container.TabItem)
 	setError(err string)
 	searchStarted(searchSettings *util.SearchSettings, searchTerms [][]string)
 	searchFinished(searchResults []*util.CorpusSearchResult, totalInstances int, searchTimeStart time.Time, searchTimeDuration time.Duration)
@@ -35,10 +36,12 @@ type srpStruct struct {
 
 	searchSettings *util.SearchSettings
 	searchTerms    [][]string
+	corpusScope    string
 
 	resultDisplay textDisplayPane
 
-	gui guiInternal
+	parentTab *container.TabItem
+	gui       guiInternal
 }
 
 func newSearchResultsPane(gui guiInternal) searchResultsPane {
@@ -108,6 +111,8 @@ func (srp *srpStruct) searchStarted(searchSettings *util.SearchSettings, searchT
 	srp.resultsText.AppendMarkdown(fmt.Sprintf("``- Show FORM over FRAG     : %v``", searchSettings.UseFORM))
 	srp.searchSettings = searchSettings
 	srp.searchTerms = searchTerms
+
+	srp.corpusScope = corpusScope
 }
 
 func (srp *srpStruct) searchFinished(searchResults []*util.CorpusSearchResult, totalInstances int, searchTimeStart time.Time, searchTimeDuration time.Duration) {
@@ -174,6 +179,12 @@ func (srp *srpStruct) searchFinished(searchResults []*util.CorpusSearchResult, t
 		corpusAccItem := widget.NewAccordionItem(fmt.Sprintf("%s: %d", cr.CorpusName, len(cr.TextResults)), corpusAccLeftPadding)
 		srp.resultsAccordion.Append(corpusAccItem)
 	}
+
+	srp.parentTab.Text = fmt.Sprintf("%s : %v", srp.corpusScope, srp.searchTerms)
+}
+
+func (srp *srpStruct) setParentTab(tab *container.TabItem) {
+	srp.parentTab = tab
 }
 
 func (srp *srpStruct) getPane() fyne.CanvasObject {
