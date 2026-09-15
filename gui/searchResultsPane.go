@@ -51,24 +51,23 @@ func newSearchResultsPane(gui guiInternal) searchResultsPane {
 	srp.setupResultDisplay()
 
 	srp.mainContainer = container.NewBorder(
-		nil, nil,
-		container.NewHBox(
-			container.NewVScroll(
+		nil, nil, nil, nil,
+		container.NewHSplit(
+			container.NewScroll(
 				container.NewVBox(
 					widget.NewRichTextFromMarkdown(labelTextResults),
 					widget.NewSeparator(),
 					srp.results,
 				),
 			),
-			widget.NewSeparator(),
-		), nil,
-		container.NewScroll(
-			container.NewBorder(
-				container.NewVBox(
-					widget.NewRichTextFromMarkdown(labelTextResultDisplay),
-					widget.NewSeparator(),
-				), nil, nil, nil,
-				srp.resultDisplay.getPane(),
+			container.NewScroll(
+				container.NewBorder(
+					container.NewVBox(
+						widget.NewRichTextFromMarkdown(labelTextResultDisplay),
+						widget.NewSeparator(),
+					), nil, nil, nil,
+					srp.resultDisplay.getPane(),
+				),
 			),
 		),
 	)
