@@ -179,7 +179,11 @@ func (srp *srpStruct) searchFinished(searchResults []*util.CorpusSearchResult, t
 		srp.resultsAccordion.Append(corpusAccItem)
 	}
 
-	srp.parentTab.Text = fmt.Sprintf("%s : %v", srp.corpusScope, srp.searchTerms)
+	parentTabText := fmt.Sprintf("%s : %v", srp.corpusScope, srp.searchTerms)
+	if len(parentTabText) > 25 {
+		parentTabText = fmt.Sprintf("%s...", parentTabText[0:21])
+	}
+	srp.parentTab.Text = parentTabText
 }
 
 func (srp *srpStruct) setParentTab(tab *container.TabItem) {
